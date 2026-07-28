@@ -83,8 +83,15 @@ class MeetingController extends Controller
         $granted_total = 0;
        
         foreach ($statistics as $statistic) {
-            
-                $application = Application::find($statistic->appl_id);  
+
+                $application = Application::find($statistic->appl_id);
+                // A statistics row can outlive the application it points at
+                // (deleting an application leaves its meeting rows behind).
+                // The guard below only wrapped the switch, so the lookup
+                // further down still dereferenced the missing record.
+                if(!$application){
+                    continue;
+                }
                 if($application){
                     switch ($application->status) {
                         case '5':
@@ -109,7 +116,7 @@ class MeetingController extends Controller
                     $query->where('statistics.appl_id','=',$application->id )->where('applications.status','=',4);
                 })
                 ->orderBy('id','desc')->first();
-            if(($application->status==4) && ($lastMeetingStatistic->meeting_id == $id) && (!in_array($application, $applications))){
+            if(($application->status==4) && ($lastMeetingStatistic && $lastMeetingStatistic->meeting_id == $id) && (!in_array($application, $applications))){
             $noofApplications++;
             array_push($applications, $application);
             }
@@ -168,16 +175,20 @@ class MeetingController extends Controller
         $meeting_included_date = date('Y-m-d H:i:s', strtotime($meeting->date . ' +1 day'));
         foreach ($statistics as $statistic) {
             $application = Application::find($statistic->appl_id);
+            // Skip rows left behind by a deleted application.
+            if(!$application){
+                continue;
+            }
             $lastMeetingStatistic = Statistic::where('appl_id',$application->id)
             ->with('Application')
             ->whereHas('Application', function($query) use ($application) {
                 $query->where('statistics.appl_id','=',$application->id )->where('applications.status','=',4);
             })
             ->orderBy('id','desc')->first();
-            if(($application->status==4) && ($lastMeetingStatistic->meeting_id == $id) &&(!in_array($application, $applications))){
+            if(($application->status==4) && ($lastMeetingStatistic && $lastMeetingStatistic->meeting_id == $id) &&(!in_array($application, $applications))){
              array_push($applications, $application);
             }
-         } 
+         }
          return view('admin.meetings.meeting-apps')->with('applications',$applications)->with('meeting',$meeting)->with('meetings',$meetings)->with('meeting_included_date',$meeting_included_date);
     }
 

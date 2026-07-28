@@ -6,9 +6,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
   	<link href="{{ asset('vendor/adminlte/vendor/bootstrap/dist/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
   	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-  	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
   	<style type="text/css">
-  	@import url(http://fonts.googleapis.com/earlyaccess/notosansmalayalam.css);
+  	@import url(https://fonts.googleapis.com/earlyaccess/notosansmalayalam.css);
   	@import url(https://fonts.googleapis.com/css?family=Noto+Sans);
   	td,th{
   		font-family: 'Noto Sans Malayalam', 'Noto Sans';

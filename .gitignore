@@ -16,6 +16,10 @@ app/scholarship/.env
 app/scholarship/.env.*
 !app/scholarship/.env.example
 
+# Uploaded applicant photos and documents — personal data, and 70MB of it.
+# These belong on the server's disk (or object storage), never in the repo.
+app/scholarship/storage/uploads/
+
 # Laravel runtime
 app/scholarship/storage/*.key
 app/scholarship/storage/logs/*.log

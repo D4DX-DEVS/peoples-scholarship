@@ -4,11 +4,14 @@
 	<meta charset="UTF-8">
 	<title>.</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-  	<link href="{{ asset('/css/bootstrap/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
+  	{{-- Was /css/bootstrap/bootstrap.min.css, which does not exist and 404s,
+  	     leaving this print sheet unstyled. Points at the bundled AdminLTE copy,
+  	     matching admin/applications/print-application.blade.php. --}}
+  	<link href="{{ asset('vendor/adminlte/vendor/bootstrap/dist/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
   	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-  	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
   	<style type="text/css">
-  	@import url(http://fonts.googleapis.com/earlyaccess/notosansmalayalam.css);
+  	@import url(https://fonts.googleapis.com/earlyaccess/notosansmalayalam.css);
   	@import url(https://fonts.googleapis.com/css?family=Noto+Sans);
   	td,th{
   		font-family: 'Noto Sans Malayalam', 'Noto Sans';
@@ -70,7 +73,9 @@ td.noborder, th.noborder {font-family:Arial, sans-serif;font-size:14px;padding:1
   </tr>
     <tr>
       <td class="noborder tg-yw4l th" colspan="2">Meeting No.& Date :</td>
-      <td class="noborder tg-yw4l" colspan="2">{{$current_statistic->meeting->serial_no}},   {{date('d-M-Y',strtotime($current_statistic->meeting->date))}}</td>
+      {{-- An application that has never been placed on a meeting has no
+           statistics row, which used to make this sheet fail to render. --}}
+      <td class="noborder tg-yw4l" colspan="2">@if($current_statistic && $current_statistic->meeting){{$current_statistic->meeting->serial_no}},   {{date('d-M-Y',strtotime($current_statistic->meeting->date))}}@endif</td>
       <td class="noborder tg-yw4l th">App. Number :</td>
       <td class="noborder tg-yw4l">{{$application->refno}}</td>
     </tr>
@@ -133,12 +138,12 @@ td.noborder, th.noborder {font-family:Arial, sans-serif;font-size:14px;padding:1
   @elseif($application->status === 15)
     <tr>
   <th class="tg-ygzf" colspan="2">Pending Reason</th>
-  <td class="tg-yw4l" colspan="3">{{$applcation->reason_status}}</td>
+  <td class="tg-yw4l" colspan="3">{{$application->reason_status}}</td>
     </tr>
   @elseif($application->status === 5)
     <tr>
   <th class="tg-ygzf" colspan="2">Rejected Reason</th>
-  <td class="tg-yw4l" colspan="3">{{$applcation->reason_status}}</td>
+  <td class="tg-yw4l" colspan="3">{{$application->reason_status}}</td>
     </tr>
  @endif
 </table>
