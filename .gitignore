@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+
+# Archives / backups (kept on disk, never in git or the web root)
+*.zip
+
+# Database dumps (may contain personal applicant data)
+*.sql
+
+# Dependencies
+app/scholarship/vendor/
+app/scholarship/node_modules/
+
+# Secrets
+app/scholarship/.env
+
+# Laravel runtime
+app/scholarship/storage/*.key
+app/scholarship/storage/logs/*.log
+app/scholarship/storage/framework/cache/data/*
+app/scholarship/storage/framework/sessions/*
+app/scholarship/storage/framework/views/*
+app/scholarship/public/hot
+app/scholarship/public/storage
+app/scholarship/.phpunit.result.cache
+
+# Editors
+.idea/
+.vscode/
+
+# Legacy server artifacts
+app/error_log
