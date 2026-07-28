@@ -65,7 +65,7 @@
 					<td>{{$application->district->district}}</td>
 					<td><div class="btn-group">
 					@if($application->status!==8 && $application->status!==10)
-						<a href="{{ route('admin-app-edit',['id'=> $application->id,'persid'=>$application->persid])}}" target="_blank"> <button title="Edit" class="btn btn-warning btn-xs"> <i class="fa fa-pencil"></i> </button> </a>
+						<a href="{{ route('admin-app-edit',['appli_id'=> $application->id,'pers_id'=>$application->persid])}}" target="_blank"> <button title="Edit" class="btn btn-warning btn-xs"> <i class="fa fa-pencil"></i> </button> </a>
 					@endif
 					</div>
 					</td>

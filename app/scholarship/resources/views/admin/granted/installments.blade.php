@@ -94,7 +94,7 @@
           <a href="#" data-toggle="modal" data-target="#addInstallmentModal" class="btn btn-sm btn-success">Add Installment</a> 
           <a href="{{route('view-application',['id'=> $application->id])}}" class="btn btn-sm btn-success"> View Application Details</a>
             @if ($application->status!==8 )
-            <a href="{{route('admin-app-edit',['id'=> $application->id,'persid'=>$application->persid])}}" class="btn btn-sm btn-success">Edit Application</a>
+            <a href="{{route('admin-app-edit',['appli_id'=> $application->id,'pers_id'=>$application->persid])}}" class="btn btn-sm btn-success">Edit Application</a>
             @endif
           </div>
           </div>

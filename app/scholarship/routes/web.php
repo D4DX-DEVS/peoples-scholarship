@@ -1,126 +1,173 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\ApplicationController;
+use App\Http\Controllers\Admin\GrantedController;
+use App\Http\Controllers\Admin\MeetingController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\AjaxController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\FileController;
+use App\Http\Controllers\HomeController;
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
+| Controllers are referenced by class rather than by "Controller@method"
+| string, which the framework stopped resolving in Laravel 9.
 |
 */
 
-Route::get('/', 'HomeController@index')->name('welcome');
-Route::get('/auth/register', array('uses' => 'Auth\AuthController@getRegister', 'as' => 'getRegister'));
-Route::get('/auth/login',  array('uses' => 'Auth\AuthController@getLogin', 'as' => 'getLogin'));
+Route::get('/', [HomeController::class, 'index'])->name('welcome');
 
-Route::get('/application', array('uses' => 'HomeController@addApplication', 'as' => 'application-add'));
-Route::post('/application', array('uses' => 'HomeController@checkNewUser', 'as' => 'post-application-start'));
-Route::get('/application/start', array('uses' => 'HomeController@getPersonApplication', 'as' => 'get-application-final'));
-Route::post('/application/finish', array('uses' => 'HomeController@savePersonApplication', 'as' => 'post-application-final'));
-Route::get('/application/print', array('uses' => 'HomeController@getApplicationPrint', 'as' => 'get-application-print'));
+/*
+|--------------------------------------------------------------------------
+| Authentication
+|--------------------------------------------------------------------------
+|
+| Previously provided by Auth::routes(). That helper now lives in the
+| laravel/ui package and registers registration, password-reset and email
+| verification endpoints this application never implemented — the matching
+| controllers were absent, so /register and /password/reset returned a 500.
+| Only the routes actually in use are registered here.
+|
+*/
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
 
-Route::get('/storage/uploads/{filename}', function ($filename)
-{
-    $path = storage_path('uploads'.DIRECTORY_SEPARATOR.$filename);
-    return response()->file($path);
+    // Retained so existing bookmarks and the public site's "Login" link keep working.
+    Route::get('/auth/login', [LoginController::class, 'showLoginForm'])->name('getLogin');
+});
 
-})->name('getFile');
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
 
-// Everyone Ajax routes
-Route::post('/ajax/category', array('uses' => 'AjaxController@postCategory', 'as' => 'post-ajax-category')); 
+/*
+|--------------------------------------------------------------------------
+| Public application submission
+|--------------------------------------------------------------------------
+*/
+Route::get('/application', [HomeController::class, 'addApplication'])->name('application-add');
+Route::post('/application', [HomeController::class, 'checkNewUser'])->name('post-application-start');
+Route::get('/application/start', [HomeController::class, 'getPersonApplication'])->name('get-application-final');
+Route::post('/application/finish', [HomeController::class, 'savePersonApplication'])->name('post-application-final');
+Route::get('/application/print', [HomeController::class, 'getApplicationPrint'])->name('get-application-print');
 
-Route::post('/ajax/area', array('uses' => 'AjaxController@postArea', 'as' => 'post-ajax-area')); 
-Route::post('/ajax/unit', array('uses' => 'AjaxController@postUnit', 'as' => 'post-ajax-unit')); 
-Route::post('/ajax/category/course', array('uses' => 'AjaxController@postCategory', 'as' => 'post-ajax-category'));
-Route::post('/ajax/district', array('uses' => 'AjaxController@postDistrict', 'as' => 'post-ajax-district'));
-Route::post('/ajax/districtall', array('uses' => 'AjaxController@postDistrictAll', 'as' => 'post-ajax-district-all')); 
-//Route::post('/ajax/areaid', array('uses' => 'AjaxController@postAreaId', 'as' => 'post-ajax-areaid')); 
-Route::post('/ajax/Category',array('uses' => 'AjaxController@getCategory','as' => 'get-ajax-category'));
+// Serves an uploaded document. The filename is constrained to a single path
+// segment so it cannot escape the uploads directory (see FileController).
+Route::get('/storage/uploads/{filename}', [FileController::class, 'show'])
+    ->where('filename', '[A-Za-z0-9._-]+')
+    ->name('getFile');
 
-Auth::routes();
+/*
+|--------------------------------------------------------------------------
+| Ajax lookups used by the application forms
+|--------------------------------------------------------------------------
+*/
+Route::post('/ajax/area', [AjaxController::class, 'postArea'])->name('post-ajax-area');
+Route::post('/ajax/unit', [AjaxController::class, 'postUnit'])->name('post-ajax-unit');
+Route::post('/ajax/district', [AjaxController::class, 'postDistrict'])->name('post-ajax-district');
+Route::post('/ajax/districtall', [AjaxController::class, 'postDistrictAll'])->name('post-ajax-district-all');
+Route::post('/ajax/Category', [AjaxController::class, 'getCategory'])->name('get-ajax-category');
 
-// Only Authorized Person Can Enter
-Route::group(array('middleware' => 'auth'),function()
-{	
-	// An Authenticated User Can Logout
-	Route::get('/auth/logout', array('uses' => 'Auth\AuthController@getLogout', 'as' => 'getLogout'));
+// Both of these previously carried the name "post-ajax-category"; the later
+// registration silently won, so route('post-ajax-category') has always pointed
+// at /ajax/category/course. That mapping is preserved and the shadowed route
+// keeps its URL under a distinct name. Duplicate names are no longer merely
+// redundant — they make route:cache fail outright on modern Laravel.
+Route::post('/ajax/category', [AjaxController::class, 'postCategory'])->name('post-ajax-category-lookup');
+Route::post('/ajax/category/course', [AjaxController::class, 'postCategory'])->name('post-ajax-category');
 
-	// Admin Routes
-	Route::group(array('prefix' => '/admin'), function(){
-		Route::get('/', array('uses' => 'Admin\AdminController@index', 'as' => 'admin-dashboard'));
-		Route::get('/changepassword','Admin\AdminController@viewChangePassword');
-		Route::post('/changepassword','Admin\AdminController@changePassword')->name('changePassword');		
-		Route::get('/area', array('uses'=> 'Admin\AdminController@getAreaResults','as'=>'admin-area'));
-		Route::get('/area/admin/{areaid}/{districtid}', array('uses'=> 'Admin\AdminController@getAreaAdmin','as'=>'admin_area_admin'));
-		Route::get('/unit', array('uses'=> 'Admin\AdminController@getUnitResults','as'=>'admin-unit'));
-		Route::get('/unit/edit/{id}', array('uses'=> 'Admin\AdminController@getEditUnit','as'=>'admin-edit-unit'));
-		Route::get('/unit/delete/{id}', array('uses'=> 'Admin\AdminController@removeUnit','as'=>'admin_unit_delete'));
-		Route::get('/area/delete/{id}', array('uses'=> 'Admin\AdminController@removeArea','as'=>'admin_area_delete'));
-		Route::post('/area', array('uses'=> 'Admin\AdminController@addArea', 'as'=> 'admin-post-add-area'));
-		Route::post('/unit', array('uses'=> 'Admin\AdminController@addUnit', 'as'=> 'admin-post-add-unit'));
-		Route::post('/unit/edit', array('uses'=> 'Admin\AdminController@postEditUnit', 'as'=> 'admin-post-edit-unit'));
-		Route::post('/area/admin', array('uses'=> 'Admin\AdminController@addAreaAdmin', 'as'=> 'admin-post-add-area-admin'));
-		Route::get('/statistics',array('uses'=>'Admin\ApplicationController@getStatistics','as'=>'get-statistics'));
-		Route::post('/statistics',array('uses'=>'Admin\ApplicationController@postStatistics','as'=>'post-statistics'));
+/*
+|--------------------------------------------------------------------------
+| Authenticated admin area
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->prefix('admin')->group(function () {
 
-		Route::post('/ajax/Category',array('uses' => 'AjaxController@getAdminCategory','as' => 'get-ajax-admin-category'));
+    Route::get('/', [AdminController::class, 'index'])->name('admin-dashboard');
+    Route::get('/changepassword', [AdminController::class, 'viewChangePassword']);
+    Route::post('/changepassword', [AdminController::class, 'changePassword'])->name('changePassword');
 
-		Route::group(array('prefix' => '/settings'),function()
-    	{	
-				Route::get('/',array('uses'=>'Admin\SettingsController@getSettings','as'=>'admin-settings'));
-				Route::post('/category/new',array('uses'=>'Admin\SettingsController@addNewCategory','as'=>'add-new-category'));
-				Route::post('/course/new',array('uses'=>'Admin\SettingsController@addNewCourse','as'=>'add-new-course'));
-				Route::get('/course/admin/{courseid}', array('uses'=> 'Admin\SettingsController@getCourseAdmin','as'=>'settings_course_admin'));
-				Route::post('/course/admin', array('uses'=> 'Admin\SettingsController@addCourseAdmin', 'as'=> 'settings-post-course-admin'));
-				Route::get('/course/delete/{id}', array('uses'=> 'Admin\SettingsController@removeCourse','as'=>'admin_course_delete'));
-				Route::get('/category/delete/{id}', array('uses'=> 'Admin\SettingsController@removeCategory','as'=>'admin_category_delete'));
-				Route::get('/years', array('uses'=> 'Admin\SettingsController@getYears','as'=>'admin-year-settings'));
-				Route::post('/years', array('uses'=> 'Admin\SettingsController@addEditYears', 'as'=> 'admin-post-year-settings'));
-				Route::get('/years/delete/{id}', array('uses'=> 'Admin\SettingsController@removeYear','as'=>'admin_year_delete'));
-						
-		}); /*end /settings*/	
-		Route::group(array('prefix' => '/applications'),function()
-    	{
-			Route::post('/search',array('uses'=>'Admin\ApplicationController@applicationSearch','as'=>'application-search'));
-			Route::get('/',array('uses'=>'Admin\ApplicationController@getListing','as'=>'get-applications-listing'));
-			Route::get('/{status}', array('uses' => 'Admin\ApplicationController@getListing', 'as' => 'get-applications-listing'));
-			Route::get('/edit/{appli_id}/{pers_id}', array('uses' => 'Admin\ApplicationController@getAppEdit', 'as' => 'admin-app-edit'));
-			Route::get('/delete/{appli_id}/{pers_id}', array('uses' => 'Admin\ApplicationController@deleteApp', 'as' => 'admin-app-delete'));
-			Route::post('/edit', array('uses' => 'Admin\ApplicationController@postEditApplication', 'as' => 'admin-post-edit-app'));
-			Route::post('/approve', array('uses' => 'Admin\ApplicationController@approveApplication', 'as' => 'admin-approve-app'));
-			Route::get('/status/{appli_id}/{status}', array('uses' => 'Admin\ApplicationController@setAppStatus', 'as' => 'admin-set-app-status'));
-			Route::post('/grant', array('uses' => 'Admin\ApplicationController@postGrantApp', 'as' => 'admin-grant-app'));
-			Route::post('/reject', array('uses' => 'Admin\ApplicationController@postRejectApp', 'as' => 'admin-reject-app'));
-			Route::get('/application/view/{id}',array('uses'=>'Admin\ApplicationController@viewApplication','as'=>'view-application'));
-			Route::get('/application/print/{id}',array('uses'=>'Admin\ApplicationController@printApplication','as'=>'print-application'));
-			Route::post('/application/{id}',array('uses'=>'Admin\ApplicationController@changeApplicationStatus','as'=>'change-application-status'));
-			Route::get('/cancel-grant/{id}',array('uses'=>'Admin\ApplicationController@cancelGrant','as'=>'cancel-grant'));
-			Route::get('/application/meeting-sheet/{id}',array('uses'=>'Admin\ApplicationController@getMeetingSheet','as'=>'meeting-sheet'));
-		}); /*end /applications*/	
-		Route::group(array('prefix' => '/meetings'),function()
-    	{
-			Route::get('/',array('uses'=>'Admin\MeetingController@getMeetings','as'=>'get-meetings'));
-			Route::post('/create',array('uses'=>'Admin\MeetingController@createMeeting','as'=>'add-meeting'));
-			Route::get('/meeting/edit/{id}',array('uses'=>'Admin\MeetingController@editMeeting','as'=>'edit-meeting'));
-			Route::get('/view/{id}',array('uses'=>'Admin\MeetingController@viewMeeting','as'=>'view-meeting'));
-			Route::post('/edit/{id}',array('uses'=>'Admin\MeetingController@postEditMeeting','as'=>'post-edit-meeting'));
-			Route::get('/delete/{id}',array('uses'=>'Admin\MeetingController@deleteMeeting','as'=>'delete-meeting'));
-			Route::get('/meeting/applications/{id}',array('uses'=>'Admin\MeetingController@getApplications','as'=>'meeting-applications'));
-			Route::get('/remove-application/{meeting_id}/{appli_id}',array('uses'=>'Admin\MeetingController@removeApplication','as'=>'remove-application'));
-			Route::post('/move-applications/{meeting_id}',array('uses'=>'Admin\MeetingController@moveApplicationsMeeting','as'=>'move-applications-meeting'));
-			Route::get('/add-applications/{meeting_id}',array('uses'=>'Admin\MeetingController@getApplicationsList','as'=>'get-meeting-applications'));
-			Route::post('/post-applications/{meeting_id}',array('uses'=>'Admin\MeetingController@addApplications','as'=>'post-add-applications'));
-			}); /*end /meetings*/	
-		Route::group(array('prefix' => '/granted'),function()
-		{
-			Route::get('/',array('uses'=>'Admin\GrantedController@getApplicationsGranted','as'=>'get-files-granted'));
-			Route::get('/installments/{id}',array('uses'=>'Admin\GrantedController@getInstallments','as'=>'edit-installments'));
-			Route::post('/add/installment/{id}',array('uses'=>'Admin\GrantedController@addInstallment','as'=>'add-new-installment'));
-			Route::post('/installments/{id}',array('uses'=>'Admin\GrantedController@postInstallments','as'=>'save-installments'));
-			Route::get('/delete/installment/{id}',array('uses'=>'Admin\GrantedController@deleteInstallment','as'=>'delete-installment'));
-			Route::get('/installments-due',array('uses'=>'Admin\GrantedController@getDuesThisMonth','as'=>'get-installments-due-this-month'));
-		}); /*end /granted*/	
-    }); /*/adminend*/
-}); /*/auth end*/
+    Route::get('/area', [AdminController::class, 'getAreaResults'])->name('admin-area');
+    Route::post('/area', [AdminController::class, 'addArea'])->name('admin-post-add-area');
+    Route::get('/area/admin/{areaid}/{districtid}', [AdminController::class, 'getAreaAdmin'])->name('admin_area_admin');
+    Route::post('/area/admin', [AdminController::class, 'addAreaAdmin'])->name('admin-post-add-area-admin');
+    Route::get('/area/delete/{id}', [AdminController::class, 'removeArea'])->name('admin_area_delete');
+
+    Route::get('/unit', [AdminController::class, 'getUnitResults'])->name('admin-unit');
+    Route::post('/unit', [AdminController::class, 'addUnit'])->name('admin-post-add-unit');
+    Route::get('/unit/edit/{id}', [AdminController::class, 'getEditUnit'])->name('admin-edit-unit');
+    Route::post('/unit/edit', [AdminController::class, 'postEditUnit'])->name('admin-post-edit-unit');
+    Route::get('/unit/delete/{id}', [AdminController::class, 'removeUnit'])->name('admin_unit_delete');
+
+    Route::get('/statistics', [ApplicationController::class, 'getStatistics'])->name('get-statistics');
+    Route::post('/statistics', [ApplicationController::class, 'postStatistics'])->name('post-statistics');
+
+    // Note: a POST /admin/ajax/Category route was registered here pointing at
+    // AjaxController@getAdminCategory, a method that does not exist. Nothing
+    // referenced it — the admin course dropdown uses the top-level
+    // /ajax/Category route — so it has been dropped rather than left to 500.
+
+    Route::prefix('settings')->group(function () {
+        Route::get('/', [SettingsController::class, 'getSettings'])->name('admin-settings');
+        Route::post('/category/new', [SettingsController::class, 'addNewCategory'])->name('add-new-category');
+        Route::get('/category/delete/{id}', [SettingsController::class, 'removeCategory'])->name('admin_category_delete');
+        Route::post('/course/new', [SettingsController::class, 'addNewCourse'])->name('add-new-course');
+        Route::get('/course/admin/{courseid}', [SettingsController::class, 'getCourseAdmin'])->name('settings_course_admin');
+        Route::post('/course/admin', [SettingsController::class, 'addCourseAdmin'])->name('settings-post-course-admin');
+        Route::get('/course/delete/{id}', [SettingsController::class, 'removeCourse'])->name('admin_course_delete');
+        Route::get('/years', [SettingsController::class, 'getYears'])->name('admin-year-settings');
+        Route::post('/years', [SettingsController::class, 'addEditYears'])->name('admin-post-year-settings');
+        Route::get('/years/delete/{id}', [SettingsController::class, 'removeYear'])->name('admin_year_delete');
+    });
+
+    Route::prefix('applications')->group(function () {
+        Route::post('/search', [ApplicationController::class, 'applicationSearch'])->name('application-search');
+        Route::get('/', [ApplicationController::class, 'getListing'])->name('get-applications-index');
+        Route::get('/edit/{appli_id}/{pers_id}', [ApplicationController::class, 'getAppEdit'])->name('admin-app-edit');
+        Route::post('/edit', [ApplicationController::class, 'postEditApplication'])->name('admin-post-edit-app');
+        Route::get('/delete/{appli_id}/{pers_id}', [ApplicationController::class, 'deleteApp'])->name('admin-app-delete');
+        Route::post('/approve', [ApplicationController::class, 'approveApplication'])->name('admin-approve-app');
+        Route::get('/status/{appli_id}/{status}', [ApplicationController::class, 'setAppStatus'])->name('admin-set-app-status');
+        Route::post('/grant', [ApplicationController::class, 'postGrantApp'])->name('admin-grant-app');
+        Route::post('/reject', [ApplicationController::class, 'postRejectApp'])->name('admin-reject-app');
+        Route::get('/application/view/{id}', [ApplicationController::class, 'viewApplication'])->name('view-application');
+        Route::get('/application/print/{id}', [ApplicationController::class, 'printApplication'])->name('print-application');
+        Route::post('/application/{id}', [ApplicationController::class, 'changeApplicationStatus'])->name('change-application-status');
+        Route::get('/cancel-grant/{id}', [ApplicationController::class, 'cancelGrant'])->name('cancel-grant');
+        Route::get('/application/meeting-sheet/{id}', [ApplicationController::class, 'getMeetingSheet'])->name('meeting-sheet');
+
+        // Declared last so the more specific routes above win. Keeps the
+        // "get-applications-listing" name pointing here, as it always has.
+        Route::get('/{status}', [ApplicationController::class, 'getListing'])->name('get-applications-listing');
+    });
+
+    Route::prefix('meetings')->group(function () {
+        Route::get('/', [MeetingController::class, 'getMeetings'])->name('get-meetings');
+        Route::post('/create', [MeetingController::class, 'createMeeting'])->name('add-meeting');
+        Route::get('/view/{id}', [MeetingController::class, 'viewMeeting'])->name('view-meeting');
+        Route::get('/meeting/edit/{id}', [MeetingController::class, 'editMeeting'])->name('edit-meeting');
+        Route::post('/edit/{id}', [MeetingController::class, 'postEditMeeting'])->name('post-edit-meeting');
+        Route::get('/delete/{id}', [MeetingController::class, 'deleteMeeting'])->name('delete-meeting');
+        Route::get('/meeting/applications/{id}', [MeetingController::class, 'getApplications'])->name('meeting-applications');
+        Route::get('/remove-application/{meeting_id}/{appli_id}', [MeetingController::class, 'removeApplication'])->name('remove-application');
+        Route::post('/move-applications/{meeting_id}', [MeetingController::class, 'moveApplicationsMeeting'])->name('move-applications-meeting');
+        Route::get('/add-applications/{meeting_id}', [MeetingController::class, 'getApplicationsList'])->name('get-meeting-applications');
+        Route::post('/post-applications/{meeting_id}', [MeetingController::class, 'addApplications'])->name('post-add-applications');
+    });
+
+    Route::prefix('granted')->group(function () {
+        Route::get('/', [GrantedController::class, 'getApplicationsGranted'])->name('get-files-granted');
+        Route::get('/installments-due', [GrantedController::class, 'getDuesThisMonth'])->name('get-installments-due-this-month');
+        Route::get('/installments/{id}', [GrantedController::class, 'getInstallments'])->name('edit-installments');
+        Route::post('/installments/{id}', [GrantedController::class, 'postInstallments'])->name('save-installments');
+        Route::post('/add/installment/{id}', [GrantedController::class, 'addInstallment'])->name('add-new-installment');
+        Route::get('/delete/installment/{id}', [GrantedController::class, 'deleteInstallment'])->name('delete-installment');
+    });
+});

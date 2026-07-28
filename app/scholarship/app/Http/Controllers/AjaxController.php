@@ -3,74 +3,92 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use DB;
-use App\Http\Requests;
-use App\Http\Controllers\Controller;
-use Input;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * Dependent-dropdown lookups used by the application forms.
+ *
+ * The Input facade these methods relied on was removed in Laravel 6, and the
+ * query builder's lists() helper was removed back in 5.3 — both are replaced
+ * with their current equivalents ($request->input() and pluck()).
+ */
 class AjaxController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return Response
+     * Areas belonging to a district (looked up by district name).
      */
     public function postUnit(Request $request)
-    {   
-        $area = DB::table('area')->where('district', $request->district)->lists('area');
-        return $area;
+    {
+        return DB::table('area')
+            ->where('district', $request->input('district'))
+            ->pluck('area')
+            ->toArray();
     }
 
     /**
-     * Display a listing of the resource.
-     *
-     * @return Response
+     * Units belonging to an area.
      */
     public function postArea(Request $request)
-    {   
-        $id=Input::get('area'); 
-        $unit = DB::table('unit')->where('area_id', $id)->orderBy('unit', 'asc')->pluck('unit','id')->toArray();
-        return $unit;
+    {
+        return DB::table('unit')
+            ->where('area_id', $request->input('area'))
+            ->orderBy('unit', 'asc')
+            ->pluck('unit', 'id')
+            ->toArray();
     }
 
+    /**
+     * All categories, keyed by id.
+     */
     public function getCategory()
     {
-        $categories=DB::table('categories')->lists('catname','id');
-        return $categories;
-        
+        return DB::table('categories')->pluck('catname', 'id')->toArray();
     }
 
-    
-    public function postCategory()
-    {   $id=Input::get('category'); 
-        $courses =DB::table('courses')->where([
-            ['cat_id', '=', $id ],
-            ['course_enabled', '=', '1']
-         ])->pluck('coursename','id')->toArray();
-       return $courses;
-
+    /**
+     * Enabled courses within a category.
+     */
+    public function postCategory(Request $request)
+    {
+        return DB::table('courses')
+            ->where('cat_id', $request->input('category'))
+            ->where('course_enabled', '1')
+            ->pluck('coursename', 'id')
+            ->toArray();
     }
 
-     public function postDistrict()
-    {   $id=Input::get('district'); 
-        $area =DB::table('area')->where('district_id', $id)->orderBy('area', 'asc')->pluck('area','id')->toArray();
-       return $area;
-
-    }
-     public function postDistrictAll()
-    {   $id=Input::get('district'); 
-
-        $area =DB::table('area')->whereIn('district_id', $id)->lists('area','id');/* DB::table('schemes')->where('department_id', $request->department)->lists('name');*/
-       return $area;
-
+    /**
+     * Areas within a district.
+     */
+    public function postDistrict(Request $request)
+    {
+        return DB::table('area')
+            ->where('district_id', $request->input('district'))
+            ->orderBy('area', 'asc')
+            ->pluck('area', 'id')
+            ->toArray();
     }
 
-      public function postAreaId()
-    {   $id=Input::get('area'); 
-        $unit = DB::table('unit')->where('area_id', $id)->lists('unit','id');/* DB::table('schemes')->where('department_id', $request->department)->lists('name');*/
-        return $unit;
+    /**
+     * Areas across several districts.
+     */
+    public function postDistrictAll(Request $request)
+    {
+        return DB::table('area')
+            ->whereIn('district_id', (array) $request->input('district', []))
+            ->orderBy('area', 'asc')
+            ->pluck('area', 'id')
+            ->toArray();
     }
-    
-    
 
+    /**
+     * Units within an area.
+     */
+    public function postAreaId(Request $request)
+    {
+        return DB::table('unit')
+            ->where('area_id', $request->input('area'))
+            ->pluck('unit', 'id')
+            ->toArray();
+    }
 }

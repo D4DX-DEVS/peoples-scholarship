@@ -146,7 +146,7 @@ Application - {{$application->refno}} Details
             @endif
             <br />
             @if($application->status!==8 && $application->status!==10)
-            <a href="{{route('admin-app-edit',['id'=> $application->id,'persid'=>$application->persid])}}" class="btn btn-success">Edit Details</a>
+            <a href="{{route('admin-app-edit',['appli_id'=> $application->id,'pers_id'=>$application->persid])}}" class="btn btn-success">Edit Details</a>
             @endif
             @if($application->status >=6 && $application->status <=8)
             <a href="{{route('meeting-sheet',['id'=>$application->id])}}" class="btn btn-primary" target="_blank">Meeting Sheet</a>

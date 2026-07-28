@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Input;
 
 class PersonRequest extends FormRequest
 {
@@ -24,10 +23,8 @@ class PersonRequest extends FormRequest
      */
     public function rules()
     {
-        if(Input::get('course') == '-10')
-            $course = 'required';
-        else
-            $course = '';
+        // "-10" is the "Other" option, which makes the free-text course field required.
+        $course = $this->input('course') == '-10' ? 'required' : '';
 
 
         return [

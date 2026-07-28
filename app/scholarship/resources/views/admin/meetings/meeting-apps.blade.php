@@ -62,7 +62,7 @@
                   <td>{{$application->district->district}}</td>
                   <td>
                   <a href="{{ route('admin-app-edit', ['appli_id'=> $application->id, 'pers_id'=> $application->persid ] ) }}" title="Edit" class="btn btn-warning btn-xs noprint"><i class="fa fa-pencil"></i></a> &nbsp;
-                  <a href="{{ route('remove-application',['meeting_id'=>$meeting->id,'file_id'=>$application->id]) }}" title="Remove" class="btn btn-xs btn-warning remove-btn noprint"><i class="fa fa-trash"></i></a>
+                  <a href="{{ route('remove-application',['meeting_id'=>$meeting->id,'appli_id'=>$application->id]) }}" title="Remove" class="btn btn-xs btn-warning remove-btn noprint"><i class="fa fa-trash"></i></a>
               </td>
                 </tr>
               @endforeach
@@ -73,7 +73,7 @@
           <div class="pull-right">
 
           @if (now() < $meeting_included_date)
-            <a href="{{route('get-meeting-applications',['id'=>$meeting->id])}}" class="btn btn-sm btn-success">Add applications</a>
+            <a href="{{route('get-meeting-applications',['meeting_id'=>$meeting->id])}}" class="btn btn-sm btn-success">Add applications</a>
           @endif 
             <a href="{{route('view-meeting',['id'=>$meeting->id])}}" class="btn btn-sm btn-success cancel">Cancel</a>
             </div>

@@ -85,7 +85,9 @@ return [
     |
     */
 
-    'dashboard_url' => 'home',
+    // Points at the admin dashboard. This previously read 'home', a route that
+    // does not exist, so the header logo linked to a 404.
+    'dashboard_url' => 'admin',
 
     'logout_url' => 'logout',
 
@@ -130,11 +132,11 @@ return [
     */
 
     'filters' => [
-        JeroenNoten\LaravelAdminLte\Menu\Filters\HrefFilter::class,
-        JeroenNoten\LaravelAdminLte\Menu\Filters\ActiveFilter::class,
-        JeroenNoten\LaravelAdminLte\Menu\Filters\SubmenuFilter::class,
-        JeroenNoten\LaravelAdminLte\Menu\Filters\ClassesFilter::class,
-        JeroenNoten\LaravelAdminLte\Menu\Filters\GateFilter::class,
+        App\Support\AdminLte\Filters\HrefFilter::class,
+        App\Support\AdminLte\Filters\ActiveFilter::class,
+        App\Support\AdminLte\Filters\SubmenuFilter::class,
+        App\Support\AdminLte\Filters\ClassesFilter::class,
+        App\Support\AdminLte\Filters\GateFilter::class,
     ],
 
     /*

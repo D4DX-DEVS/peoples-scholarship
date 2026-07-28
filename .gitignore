@@ -11,8 +11,10 @@
 app/scholarship/vendor/
 app/scholarship/node_modules/
 
-# Secrets
+# Secrets — every .env variant except the committed template
 app/scholarship/.env
+app/scholarship/.env.*
+!app/scholarship/.env.example
 
 # Laravel runtime
 app/scholarship/storage/*.key

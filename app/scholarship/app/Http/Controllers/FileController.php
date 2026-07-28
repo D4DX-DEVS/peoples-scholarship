@@ -2,20 +2,35 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class FileController extends Controller
 {
-    public function loadImage($filename) {
+    /**
+     * Stream an uploaded document (applicant photo, certificate, etc.).
+     *
+     * The route previously resolved the filename straight into a path, so a
+     * request such as /storage/uploads/..%2F..%2F.env served arbitrary files
+     * from the server. The filename is now restricted to a single path segment
+     * by the route pattern and re-checked here, and the resolved path must stay
+     * inside the uploads directory.
+     */
+    public function show(string $filename): BinaryFileResponse
+    {
+        $uploads = realpath(storage_path('uploads'));
 
-        $path = storage_path('uploads'.DIRECTORY_SEPARATOR.$filename);
+        if ($uploads === false) {
+            abort(Response::HTTP_NOT_FOUND);
+        }
 
-        $file = File::get($path);
-        $type = File::mimeType($path);
+        // basename() strips any directory portion that survived the route pattern.
+        $path = realpath($uploads.DIRECTORY_SEPARATOR.basename($filename));
 
-        $response = Response::make($file, 200);
-        $response->header("Content-Type", $type);
+        if ($path === false || ! is_file($path) || ! str_starts_with($path, $uploads.DIRECTORY_SEPARATOR)) {
+            abort(Response::HTTP_NOT_FOUND);
+        }
 
-        return $response;
+        return response()->file($path);
     }
 }

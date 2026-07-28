@@ -75,7 +75,7 @@
 					<td>{{$application->area->area}}</td>
 					<td>{{$application->district->district}}</td>
 					<td><div class="btn-group">
-						<a href="{{ route('admin-app-edit',['id'=> $application->id,'pers_id'=>$application->persid])}}" target="_blank" class="noprint"> <button title="Edit" class="btn btn-warning btn-xs"> <i class="fa fa-pencil"></i> </button> </a>
+						<a href="{{ route('admin-app-edit',['appli_id'=> $application->id,'pers_id'=>$application->persid])}}" target="_blank" class="noprint"> <button title="Edit" class="btn btn-warning btn-xs"> <i class="fa fa-pencil"></i> </button> </a>
 						<a href="{{ route('edit-installments',['id'=> $application->id])}}" target="_blank" class="noprint"> <button title="Installments" class="btn btn-info btn-xs"> <i class="fa fa-money"></i> </button> </a>
 					</div>
 					</td>

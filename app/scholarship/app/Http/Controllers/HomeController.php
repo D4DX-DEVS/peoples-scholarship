@@ -11,7 +11,7 @@ use App\Category;
 use App\Application;
 use App\Person;
 use App\Http\Requests\PersonRequest;
-use Input,Redirect,Validator,File;
+use Redirect, Validator, File;
 
 class HomeController extends Controller
 {

@@ -14,7 +14,7 @@
 	<div class="box-header">
 		<h3 class="box-title">Select Applications for meeting "{{$meeting->serial_no}}"</h3>
 	</div>	
-	<form action="{{route('post-add-applications',['id'=>$meeting->id])}}" method="post">
+	<form action="{{route('post-add-applications',['meeting_id'=>$meeting->id])}}" method="post">
 	<div class="box-body">
 	{!!csrf_field()!!}
 		<table class="table table-hover" id="result-table">
