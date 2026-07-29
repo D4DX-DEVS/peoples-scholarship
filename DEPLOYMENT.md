@@ -7,26 +7,73 @@ Laravel 13 · PHP 8.3+ · MySQL/MariaDB · Blade + AdminLTE 2 (server-rendered)
 ## Which host
 
 **DigitalOcean.** Netlify cannot run this application at all — it serves static
-sites and JS/Go/Rust serverless functions, with no PHP runtime, no persistent
-MySQL connection model, and no persistent disk for uploads. This app is
-server-rendered PHP with file-based sessions and a 70MB uploads directory, so
-the mismatch is absolute rather than a matter of preference.
+sites and JS/Go/Rust serverless functions, with no PHP runtime and no
+persistent MySQL connection model. This app is server-rendered PHP with
+file-based sessions, so the mismatch is absolute rather than a matter of
+preference.
+
+Applicant photo uploads are stored on **DigitalOcean Spaces** (S3-compatible,
+fully public bucket/CDN), not local disk — see "Object storage (Spaces)"
+below. That means App Platform's ephemeral filesystem is no longer a blocker;
+either option below works.
 
 Two DigitalOcean options:
 
-| | Droplet (recommended) | App Platform |
+| | Droplet | App Platform (recommended) |
 |---|---|---|
 | PHP version | you choose | needs a custom Dockerfile |
-| Uploads | persistent disk, works as-is | ephemeral — must move to Spaces first |
+| Uploads | Spaces (see below) | Spaces (see below) |
 | Cost | from $6/mo | from ~$5/mo + managed DB |
 | Ops | you patch the OS | managed |
 
-The Droplet is the better fit: uploads land on local disk today, and moving
-them to object storage is a code change you do not need in order to ship.
+App Platform is now the simpler fit: no OS patching, no server to secure, and
+uploads already live in object storage. Bring your own Dockerfile (PHP 8.3+
+with the `pdo_mysql` and standard Laravel extensions) targeting
+`app/scholarship/public` as the document root; App Platform's managed MySQL
+add-on replaces the self-hosted database.
 
-A **$12/mo Droplet (2GB RAM)** plus **daily backups ($2.40/mo)** is a sensible
-starting point. 1GB works but leaves little headroom for MySQL alongside
-PHP-FPM.
+If you'd rather run a Droplet, a **$12/mo Droplet (2GB RAM)** plus **daily
+backups ($2.40/mo)** is a sensible starting point. 1GB works but leaves
+little headroom for MySQL alongside PHP-FPM.
+
+---
+
+## Object storage (Spaces)
+
+Applicant photos upload straight to a DigitalOcean Spaces bucket via
+Laravel's `spaces` filesystem disk (`config/filesystems.php`) — nothing is
+written to local disk, which is what makes App Platform's ephemeral
+filesystem safe to use. The bucket/folder must be **fully public** (Spaces
+CDN endpoint, not the private origin), since photo URLs are rendered directly
+in `<img>`/CSS `background-image` with no signed-URL logic.
+
+Required env vars:
+
+```ini
+DO_SPACES_KEY=
+DO_SPACES_SECRET=
+DO_SPACES_REGION=        # e.g. blr1 — the region slug from the endpoint
+DO_SPACES_ENDPOINT=      # https://<region>.digitaloceanspaces.com
+DO_SPACES_CDN_ENDPOINT=  # https://<bucket>.<region>.cdn.digitaloceanspaces.com
+DO_SPACES_BUCKET=
+DO_SPACES_FOLDER=        # per-project prefix inside the shared bucket
+FILESYSTEM_DISK=spaces
+```
+
+`DO_SPACES_FOLDER` may contain spaces (it's just an S3 key prefix) — quote it
+in `.env` (`DO_SPACES_FOLDER="peoples scholar"`) or dotenv parsing fails.
+`Person::photo_cdn_url` (`app/Person.php`) builds the public URL and
+percent-encodes it manually, since the disk's own URL generator does not
+encode spaces in the root prefix — required because a raw space breaks
+unquoted CSS `url(...)` and any non-browser HTTP client.
+
+The `league/flysystem-aws-s3-v3` Composer package provides the S3-compatible
+driver and is already in `composer.json` — `composer install` pulls it in,
+no extra step needed.
+
+`FileController`/the `/storage/uploads/{filename}` route (`routes/web.php`)
+are unused now that photos resolve straight to the CDN, but are left in
+place — harmless dead code, not wired into any view.
 
 ---
 
@@ -137,7 +184,18 @@ DB_USERNAME=ppf
 DB_PASSWORD=the-password-you-set
 
 SESSION_SECURE_COOKIE=true      # requires HTTPS
+
+FILESYSTEM_DISK=spaces
+DO_SPACES_KEY=...
+DO_SPACES_SECRET=...
+DO_SPACES_REGION=...
+DO_SPACES_ENDPOINT=...
+DO_SPACES_CDN_ENDPOINT=...
+DO_SPACES_BUCKET=...
+DO_SPACES_FOLDER=...
 ```
+
+See "Object storage (Spaces)" above for what each of these means.
 
 `APP_KEY` must be generated once and then never changed — it encrypts session
 cookies, so rotating it logs everyone out.
@@ -152,12 +210,10 @@ chmod -R 775 app/scholarship/storage app/scholarship/bootstrap/cache
 chmod 640 app/scholarship/.env
 ```
 
-Copy the uploaded applicant photos across (they are not in git — 70MB of
-personal data), then cache everything:
+Applicant photos live on Spaces, not local disk, so there is nothing to
+rsync — just cache everything:
 
 ```bash
-rsync -av storage/uploads/ deploy@your-droplet:/var/www/peoples-scholar/app/scholarship/storage/uploads/
-
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
@@ -237,7 +293,10 @@ able to log in.
 
 ## 6. Backups
 
-The uploads directory and the database are the irreplaceable parts.
+The database is the irreplaceable part on the server itself — applicant
+photos live on Spaces, which DigitalOcean backs separately. Enable Spaces
+bucket versioning or a periodic Spaces-to-Spaces sync if you want a second
+copy of the photos too.
 
 ```bash
 cat > /usr/local/bin/ppf-backup <<'SH'
@@ -246,7 +305,6 @@ set -euo pipefail
 D=/var/backups/ppf; mkdir -p "$D"
 S=$(date +%F)
 mysqldump -u ppf -p"$DB_PASS" ppf_scholership | gzip > "$D/db-$S.sql.gz"
-tar czf "$D/uploads-$S.tar.gz" -C /var/www/peoples-scholar/app/scholarship/storage uploads
 find "$D" -mtime +30 -delete
 SH
 chmod +x /usr/local/bin/ppf-backup

@@ -65,8 +65,8 @@
       <input type="hidden" name="persid" value="{{ $persid }}">
       <input type="hidden" name="applid" value="{{ $applid }}">
       <div id="file-uploader">
-        <div id="file_img" style="background-image: url({{ ($person->photourl != '') ? route('getFile', ['filename' => $person->photourl]) : asset('images/uploads/nopic.jpg')  }})" ></div>
-        <input type="file" id="file-btn" name="profile_pic" accept="image/*" value="{{ ($person->photourl != '') ? route('getFile', ['filename' => $person->photourl]) : '' }}"/>
+        <div id="file_img" style="background-image: url('{{ $person->photo_cdn_url ?? asset('images/uploads/nopic.jpg') }}')" ></div>
+        <input type="file" id="file-btn" name="profile_pic" accept="image/*" value="{{ $person->photo_cdn_url ?? '' }}"/>
       </div>
         <label class="btn  btn-flat btn-success" style="width: 210px; padding: 10px 0 ; margin:0 auto 10px auto;">UPLOAD PHOTO</label> <br>
         <span><strong>(Size: 150 x 150, Max: 500KB)</strong></span>
