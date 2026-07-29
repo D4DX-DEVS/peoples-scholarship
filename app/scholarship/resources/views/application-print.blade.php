@@ -59,7 +59,7 @@
 						<td>&nbsp;</td>
 						<td valign="" rowspan="4" >
 							<div class="pull-right" style="text-align:right; height:130px;margin-right:20px;">
-								<img src="{{ ($person->photourl != '') ? ('/storage/uploads/'.$person->photourl) : asset('images/uploads/nopic.jpg')  }}" height="130px">
+								<img src="{{ $person->photo_cdn_url ?? asset('images/uploads/nopic.jpg') }}" height="130px">
 							</div>
 						</td>
 					</tr>

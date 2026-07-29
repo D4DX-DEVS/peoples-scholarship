@@ -60,6 +60,26 @@ return [
             'report' => false,
         ],
 
+        // DigitalOcean Spaces (S3-compatible). Used for applicant photo uploads
+        // because App Platform's local filesystem is ephemeral and does not
+        // survive redeploys or scale across instances. The bucket/folder is
+        // fully public, so 'url' points at the CDN endpoint rather than
+        // requiring signed requests.
+        'spaces' => [
+            'driver' => 's3',
+            'key' => env('DO_SPACES_KEY'),
+            'secret' => env('DO_SPACES_SECRET'),
+            'region' => env('DO_SPACES_REGION'),
+            'bucket' => env('DO_SPACES_BUCKET'),
+            'endpoint' => env('DO_SPACES_ENDPOINT'),
+            'url' => env('DO_SPACES_CDN_ENDPOINT'),
+            'root' => env('DO_SPACES_FOLDER'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

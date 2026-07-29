@@ -11,7 +11,8 @@ use App\Category;
 use App\Application;
 use App\Person;
 use App\Http\Requests\PersonRequest;
-use Redirect, Validator, File;
+use Illuminate\Support\Facades\Storage;
+use Redirect, Validator;
 
 class HomeController extends Controller
 {
@@ -160,16 +161,12 @@ class HomeController extends Controller
         {
             if($person->photourl!='' && $person->photourl!=null)
             {
-                $old_image = storage_path("uploads/{$person->photourl}"); // get previous image from folder
-                if (File::exists($old_image)) { // unlink or remove previous image from folder
-                    unlink($old_image);
-                }
+                Storage::disk('spaces')->delete("uploads/{$person->photourl}"); // remove previous image
             }
             $profilePic=$request->file('profile_pic');
-            $destinationPath = storage_path('uploads/');
             $ext = pathinfo($profilePic->getClientOriginalName(), PATHINFO_EXTENSION);
             $filename = $request->refno . ".".$ext;
-            $upload_success = $profilePic->move($destinationPath, $filename);
+            Storage::disk('spaces')->putFileAs('uploads', $profilePic, $filename, 'public');
             $person->photourl=$filename;
         }
 

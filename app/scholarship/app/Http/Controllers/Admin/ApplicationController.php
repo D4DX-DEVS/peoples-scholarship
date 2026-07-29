@@ -110,9 +110,11 @@ class ApplicationController extends Controller
         $application->area_id = $request->area;
         $application->unit_id = $request->unit;
         if($person->save() && $application->save())
-        {   
-            return redirect()->back()->with('success', 'Application successfully updated');                                                          
-        }     
+        {
+            return redirect()->back()->with('success', 'Application successfully updated');
+        }else{
+            return redirect()->back()->with('fail', 'Something Wrong try again.');
+        }
     }
 
     public function deleteApp($appli_id, $pers_id)
@@ -139,9 +141,9 @@ class ApplicationController extends Controller
         $application->reason_status = (isset($request->status_reason)? $request->status_reason:'');        
         if($application->save())
         {
-            return redirect()->route('get-applications-listing',['status'=>null])->with('success', 'You are Successfully approved Application of '.$request->appli_name);
+            return redirect()->route('get-applications-index')->with('success', 'You are Successfully approved Application of '.$request->appli_name);
         }else{
-            return redirect()->route('get-applications-listing',['status'=>null])->with('fail', 'Something Wrong try again.');
+            return redirect()->route('get-applications-index')->with('fail', 'Something Wrong try again.');
         }
     }
 

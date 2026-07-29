@@ -123,7 +123,7 @@
       <input type="hidden" name="persid" value="{{ $person->id }}">
       <input type="hidden" name="applid" value="{{ $application->id }}">
       <div id="file-uploader">
-        <div id="file_img" style="background-image: url({{ ($person->photourl != '') ? route('getFile', ['filename' => $person->photourl]) : asset('images/uploads/nopic.jpg')  }})" ></div>
+        <div id="file_img" style="background-image: url('{{ $person->photo_cdn_url ?? asset('images/uploads/nopic.jpg') }}')" ></div>
   </div>
 </div>
 
