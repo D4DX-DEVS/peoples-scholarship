@@ -109,6 +109,73 @@ rm -f app.zip app/scholorship.zip ppf_scholership.sql
 
 ---
 
+## App Platform configuration
+
+Sections 1–6 below describe the **Droplet** path. On App Platform there is no
+server to set up: configuration is entirely environment variables set in the
+app's console (Settings → your component → Environment Variables).
+
+**Never copy your local `.env` into these variables.** `DB_HOST=127.0.0.1`
+means "this container", and the database is not in this container — the
+connection is refused no matter what the port says. The same applies to
+`APP_URL` and `APP_DEBUG`.
+
+Attach the managed MySQL database to the app, then reference it with bindable
+variables rather than typing the values, so they survive a database
+resize or credential rotation:
+
+```ini
+DB_CONNECTION=mysql
+DB_HOST=${db.HOSTNAME}          # NOT 127.0.0.1
+DB_PORT=${db.PORT}              # managed MySQL uses 25060, not 3306
+DB_DATABASE=${db.DATABASE}
+DB_USERNAME=${db.USERNAME}
+DB_PASSWORD=${db.PASSWORD}      # mark as encrypted
+MYSQL_ATTR_SSL_CA=${db.CA_CERT} # managed MySQL requires TLS
+```
+
+Substitute the component name you gave the database for `db`. The rest:
+
+```ini
+APP_ENV=production
+APP_DEBUG=false                 # see the warning below
+APP_KEY=base64:...              # generate once, never change; mark encrypted
+APP_URL=https://your-app.ondigitalocean.app
+LOG_CHANNEL=stderr              # App Platform captures stdout/stderr, not files
+LOG_LEVEL=error
+SESSION_SECURE_COOKIE=true
+```
+
+Plus the `FILESYSTEM_DISK` and `DO_SPACES_*` values from "Object storage"
+above. Mark every secret as **encrypted**.
+
+> **`APP_DEBUG=true` in production is a data leak, not just untidy.** Laravel's
+> debug error page publishes the full stack trace, absolute file paths,
+> database host, port and name, the loaded configuration, and the visitor's IP
+> — to anyone who can trigger an error on a public URL. On an app holding
+> applicant personal data, treat having shipped it as an incident: set it to
+> `false`, redeploy, and rotate any credential that appeared on a page a
+> stranger could have loaded.
+
+### Build-time vs run-time caching
+
+`php artisan config:cache` bakes the *current* environment into
+`bootstrap/cache/config.php`. If it runs during the **build** while the
+database variables are scoped run-time-only, the cache is written from
+defaults and the app connects to `127.0.0.1:3306` forever after — the cached
+file wins over the real environment at runtime.
+
+Either scope those variables to **RUN_AND_BUILD_TIME**, or move the caching
+into the run command so it executes with the real environment:
+
+```
+php artisan config:cache && php artisan route:cache && php artisan view:cache && heroku-php-apache2 app/scholarship/public/
+```
+
+`view:cache` is safe at build time; `config:cache` is the one that bites.
+
+---
+
 ## 1. Server setup
 
 Ubuntu 24.04 LTS Droplet, as root:
