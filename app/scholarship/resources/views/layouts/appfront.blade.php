@@ -16,9 +16,9 @@
         <header class="main-header">
             <nav class="navbar navbar-static-top" style="border-bottom: solid 2px #545852;">
                 <div class="container">
-                    <div class="navbar-header">
-                        <a href="{{ url(config('adminlte.dashboard_url', 'home')) }}" class="navbar-brand">
-                            <img src="{{ asset('images/peo_logo.png') }}" alt="" class="img-responsive" style="padding-bottom:25px;">
+                    <div class="navbar-header" style="display:flex; align-items:center;">
+                        <a href="{{ url(config('adminlte.dashboard_url', 'home')) }}" class="navbar-brand" style="height:auto; padding:8px 15px;">
+                            <img src="{{ asset('images/peo_logo.png') }}" alt="" style="height:50px; width:auto;">
                         </a>
                         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
                             <i class="fa fa-bars"></i>
