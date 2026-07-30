@@ -31,7 +31,7 @@ class AjaxController extends Controller
     public function postArea(Request $request)
     {
         return DB::table('unit')
-            ->where('area_id', $request->input('area'))
+            ->where('area_id', (int) $request->input('area'))
             ->orderBy('unit', 'asc')
             ->pluck('unit', 'id')
             ->toArray();
@@ -51,8 +51,8 @@ class AjaxController extends Controller
     public function postCategory(Request $request)
     {
         return DB::table('courses')
-            ->where('cat_id', $request->input('category'))
-            ->where('course_enabled', '1')
+            ->where('cat_id', (int) $request->input('category'))
+            ->where('course_enabled', 1)
             ->pluck('coursename', 'id')
             ->toArray();
     }
@@ -63,7 +63,7 @@ class AjaxController extends Controller
     public function postDistrict(Request $request)
     {
         return DB::table('area')
-            ->where('district_id', $request->input('district'))
+            ->where('district_id', (int) $request->input('district'))
             ->orderBy('area', 'asc')
             ->pluck('area', 'id')
             ->toArray();
@@ -75,7 +75,7 @@ class AjaxController extends Controller
     public function postDistrictAll(Request $request)
     {
         return DB::table('area')
-            ->whereIn('district_id', (array) $request->input('district', []))
+            ->whereIn('district_id', array_map('intval', (array) $request->input('district', [])))
             ->orderBy('area', 'asc')
             ->pluck('area', 'id')
             ->toArray();
@@ -87,7 +87,7 @@ class AjaxController extends Controller
     public function postAreaId(Request $request)
     {
         return DB::table('unit')
-            ->where('area_id', $request->input('area'))
+            ->where('area_id', (int) $request->input('area'))
             ->pluck('unit', 'id')
             ->toArray();
     }

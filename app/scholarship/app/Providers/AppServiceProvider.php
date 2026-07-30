@@ -218,16 +218,19 @@ class AppServiceProvider extends ServiceProvider
      */
     private function registerValidators(): void
     {
-        Validator::extend('uniqueMobileAndYear', function ($attribute, $value, $parameters, $validator) {
-            return Person::whereHas('application', function ($query) use ($parameters) {
-                $query->where('year_id', '=', $parameters[0]);
-            })->where('mobile', $value)->count() === 0;
+        // MongoDB has no joins, so whereHas cannot be translated. The
+        // applicants who already have an application in the year are
+        // resolved first, then matched by key — same result, two queries.
+        $applicantsInYear = fn ($yearId) => Application::where('year_id', '=', $yearId)->pluck('persid');
+
+        Validator::extend('uniqueMobileAndYear', function ($attribute, $value, $parameters, $validator) use ($applicantsInYear) {
+            return Person::whereIn('id', $applicantsInYear($parameters[0]))
+                ->where('mobile', $value)->count() === 0;
         });
 
-        Validator::extend('uniqueAadharAndYear', function ($attribute, $value, $parameters, $validator) {
-            return Person::whereHas('application', function ($query) use ($parameters) {
-                $query->where('year_id', '=', $parameters[0]);
-            })->where('aadhar', $value)->count() === 0;
+        Validator::extend('uniqueAadharAndYear', function ($attribute, $value, $parameters, $validator) use ($applicantsInYear) {
+            return Person::whereIn('id', $applicantsInYear($parameters[0]))
+                ->where('aadhar', $value)->count() === 0;
         });
     }
 }

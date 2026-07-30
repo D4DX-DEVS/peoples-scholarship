@@ -31,7 +31,20 @@
 
         </div><!-- /.box-header -->
         <div class="box-body table-responsive " style="min-height:350px;over-flow:hidden">
-        <div id="tfilter"></div>
+        <div id="tfilter">
+          <select id="filter-unit" class="form-c">
+            <option value="">Filter by unit</option>
+            @foreach($filterUnits as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
+          </select>
+          <select id="filter-area" class="form-c">
+            <option value="">Filter by area</option>
+            @foreach($filterAreas as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
+          </select>
+          <select id="filter-district" class="form-c">
+            <option value="">Filter by district</option>
+            @foreach($filterDistricts as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
+          </select>
+        </div>
 
           <table class="table " id="result-table">
            <thead>
@@ -48,60 +61,8 @@
             </tr>
             </thead>
              <tbody>
-               @foreach( $applications as $applicant )
-				            <tr>
-										<td><div><a href="{{route('view-application',['id'=>$applicant->id])}}" title="View Application">{{ $applicant->refno }}</a></div></td>
-										<td>{{ isset($applicant->person) ? $applicant->person->personname : '' }}</td>
-										<td>{{ $applicant->created_at }}</td>
-				            <td>{{ isset($applicant->person) ? $applicant->person->mobile : '' }}</td>
-				            <td>{{ isset($applicant->unit) ? $applicant->unit->unit : '' }}</td>
-										<td>{{ isset($applicant->area) ? $applicant->area->area : '' }}</td>
-				            <td>{{ isset($applicant->district) ? $applicant->district->district : '' }}</td>
-										<td>{{ isset($applicant->course) ? $applicant->course->coursename : $applicant->course_other  }}</td>
-				            <td>
-				              @if($applicant->getStatus->status_text == 'Granted')
-		            			<span class="label bg-green">Granted : Rs.{{ $applicant->amount_granted }} </span>
-		            		  @elseif($applicant->getStatus->status_text == 'Rejected')
-		            			<a href="#" class="get-reason label bg-red"  data-toggle="modal"  data-target="#RejectionModel"  data-content="{!! nl2br($applicant->reason_status) !!}" data-whatever="@mdo">Rejected: View</a>
-		            		  @elseif($applicant->getStatus->status_text == 'Completed')
-		            			<span class="label bg-black">Completed : Rs.{{ $applicant->amount_granted }} </span>
-		            		  @else
-								<div data-toggle="modal" class="btn-group">
-				                  <button type="button" class="btn btn-info ">
-					                  {{ $applicant->getStatus->status_text }}
-				                  </button>
-				                  <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown">
-				                    <span class="caret"></span>
-				                    <span class="sr-only">Actions</span>
-				                  </button>
-													<ul class="dropdown-menu status-buttons" role="menu">
-													<li><a class="change-status-button" href="{{ route('admin-app-edit', ['appli_id'=> $applicant->id, 'pers_id'=> $applicant->persid ] ) }}">Verify / Edit</a></li>
-
-				                  @if($applicant->getStatus->status_text == 'Registered' || $applicant->getStatus->status_text == 'Incomplete')
-				                	<li><a class="change-status-button" href="{{ route('admin-set-app-status', ['appli_id'=> $applicant->id, 'status'=> 'Incomplete' ] ) }}">Incomplete</a></li>
-													<li><a class="change-status-button" href="{{ route('admin-app-delete', ['appli_id'=> $applicant->id, 'pers_id'=> $applicant->persid ] ) }}">Delete</a></li>
-													@elseif($applicant->getStatus->status_text == 'Verified' )
-				                	<li><a class="change-status-button" href="{{ route('admin-set-app-status', ['appli_id'=> $applicant->id, 'status'=> 'Interview' ] ) }}">Interview</a></li>
-													<li><a href="#" data-toggle="modal" class="reject-modal" data-ref-no="{{ $applicant->refno }}" data-person-name="{{ $applicant->person->personname }}" data-appli-id="{{ $applicant->id }}" data-target="#rejectModal">Reject</a></li>
-				                  @elseif($applicant->getStatus->status_text == 'Interview' )
-				                	<li><a href="#" data-toggle="modal" class="reject-modal" data-ref-no="{{ $applicant->refno }}" data-person-name="{{ $applicant->person->personname }}" data-appli-id="{{ $applicant->id }}" data-target="#rejectModal">Reject</a></li>
-				                  @elseif($applicant->getStatus->status_text == 'Meeting' )
-				                	<li><a href="#" data-toggle="modal" class="grant-modal" data-ref-no="{{ $applicant->refno }}" data-person-name="{{ $applicant->person->personname }}" data-appli-id="{{ $applicant->id }}" data-target="#grantModal">Grant</a></li>
-				                	<li><a class="change-status-button" href="{{ route('admin-set-app-status', ['appli_id'=> $applicant->id, 'status'=> 'Pending' ] ) }}">Pending</a></li>
-				                	<li><a href="#" data-toggle="modal" class="reject-modal" data-ref-no="{{ $applicant->refno }}" data-person-name="{{ $applicant->person->personname }}" data-appli-id="{{ $applicant->id }}" data-target="#rejectModal">Reject</a></li>
-				                  @elseif($applicant->getStatus->status_text == 'Pending' )
-				                	<li><a href="#" data-toggle="modal" class="grant-modal" data-ref-no="{{ $applicant->refno }}" data-person-name="{{ $applicant->person->personname }}" data-appli-id="{{ $applicant->id }}"  data-target="#grantModal">Grant</a></li>
-				                	<li><a href="#" data-toggle="modal" class="reject-modal" data-ref-no="{{ $applicant->refno }}" data-person-name="{{ $applicant->person->personname }}" data-appli-id="{{ $applicant->id }}"  data-target="#rejectModal">Reject</a></li>
-													@elseif($applicant->getStatus->status_text == 'Granded' )
-				                	<li><a class="change-status-button" href="{{ route('admin-set-app-status', ['appli_id'=> $applicant->id, 'status'=> 'Interview' ] ) }}">Completed</a></li>
-				                  @endif
-				                  </ul>
-				                </div>
-				                @endif
-                			</td>
-				            </tr>
-            @endforeach
-          </tbody>
+               {{-- Rows are loaded ten at a time from applications-data. --}}
+             </tbody>
           </table>
 
         </div><!-- /.box-body -->
@@ -135,146 +96,79 @@ function rejectionReason(reason){
 	}
 		$(document).ready(function(){
 		// Filtering starts
-		$("#result-table").DataTable(
-			{
-        dom: "<'row'<'col-md-3'l><'col-md-6'B><'col-md-3 pull-right'f>>" +"t"+
-		 			"<<'col-md-5'i><'col-md-6 pull-right'p>>",
-        buttons: [
-            {
-                extend: 'print',
-                customize: function ( win ) {
-                    $(win.document.body).find( 'table' )
-                        .find('tr').not(':first').find('td:last-child')
-                        .html( '<span></span>' );
-                },
-                text: 'Print all',
-                exportOptions: {
-									  columns: ':visible',
-                    modifier: {
-                        selected: null
-                    }
-                }
-            },
-            {
-                extend: 'print',
-                customize: function ( win ) {
-                    $(win.document.body).find( 'table' )
-                        .find('tr').not(':first').find('td:last-child')
-                        .html( '<span></span>' );
-                },
-								text: 'Print selected',
-								exportOptions:{
-									columns:':visible',
-								}
-						},
-						{
-								extend:'excel',
-								exportOptions:{
-									columns:':visible',
-								}
-						},
-            'colvis'
-				],
-				order: [[ 0, "desc" ]],
-				"columnDefs": [
-            {
-            	"targets":[6],
-            	"visible":false
-						}],
-						initComplete: function () {
-            this.api().columns([4,5,6]).every( function () {
-                var column = this;
-                var select_name;
+		var statusFilter = @json($status ?? null);
 
-                if (column[0][0] == 4) {
-                	select_name = 'unit';
-                }
+		// Extra parameters the server needs: the status this listing is scoped
+		// to, plus the three dropdowns. DataTables sends its own draw/start/
+		// length/search/order alongside these.
+		function tableFilters(d) {
+			d.status   = statusFilter;
+			d.unit     = $('#filter-unit').val();
+			d.area     = $('#filter-area').val();
+			d.district = $('#filter-district').val();
+		}
 
-                if (column[0][0] == 5) {
-                	select_name = 'area';
-                }
+		var table = $("#result-table").DataTable({
+			processing: true,
+			serverSide: true,
+			deferRender: true,
+			pageLength: 10,
+			lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+			ajax: {
+				url: "{{ route('applications-data') }}",
+				data: tableFilters
+			},
+			dom: "<'row'<'col-md-3'l><'col-md-6'B><'col-md-3 pull-right'f>>" + "t" +
+			     "<<'col-md-5'i><'col-md-6 pull-right'p>>",
+			buttons: [
+				{
+					// The browser only holds the current page, so printing the
+					// whole list has to be done by the server, using the same
+					// search and filters that are on screen.
+					text: 'Print all',
+					className: 'btn-default',
+					action: function () { window.open(exportUrl('print'), '_blank'); }
+				},
+				{
+					extend: 'print',
+					text: 'Print selected',
+					customize: function (win) {
+						$(win.document.body).find('table')
+							.find('tr').not(':first').find('td:last-child')
+							.html('<span></span>');
+					},
+					exportOptions: { columns: ':visible', modifier: { selected: true } }
+				},
+				{
+					text: 'Excel',
+					className: 'btn-default',
+					action: function () { window.location = exportUrl('csv'); }
+				},
+				'colvis'
+			],
+			order: [[0, "desc"]],
+			columnDefs: [{ targets: [6], visible: false }, { targets: [8], orderable: false, searchable: false }],
+			select: true
+		});
 
-                if (column[0][0] == 6) {
-                	select_name = 'district';
-                }
+		// Mirror the table's state onto the export links.
+		function exportUrl(format) {
+			var order = table.order()[0] || [0, 'desc'];
+			return "{{ route('applications-export') }}?" + $.param({
+				format: format,
+				status: statusFilter || '',
+				unit: $('#filter-unit').val() || '',
+				area: $('#filter-area').val() || '',
+				district: $('#filter-district').val() || '',
+				search: table.search() || '',
+				order: [{ column: order[0], dir: order[1] }]
+			});
+		}
 
-                var select = $('<select id="'+select_name+'" class="form-c"><option value="">Filter by '+select_name+'</option></select>')
-                    .appendTo( $("#tfilter") )
-                    .on( 'change', function () {
-                        var val = $.fn.dataTable.util.escapeRegex(
-                            $(this).val()
-                        );
+		$('#filter-unit, #filter-area, #filter-district').on('change', function () {
+			table.ajax.reload();
+		});
 
-                        column
-                            .search( val ? '^'+val+'$' : '', true, false )
-                            .draw();
-                    } );
-
-                column.data().unique().sort().each( function ( d, j ) {
-                    select.append( '<option value="'+d+'">'+d+'</option>' )
-                } );
-            } );
-        }
-						,
-        select: true
-    } );
-
-		// 	{
-  	// 	"dom" : "<'row'<'col-md-3'l><'col-md-6'B><'col-md-3 pull-right'f>>" +"t"+
-		// 			"<<'col-md-5'i><'col-md-6 pull-right'p>>",
-    //  	"buttons": [{
-    //     "extend":'print',
-    //     "exportOptions":{
-    //     	"columns":':visible',
-    //     }    },
-    //     {
-    //     "extend":'excel',
-    //     "exportOptions":{
-    //     	"columns":':visible',
-    //     }    },
-    //     "colvis"],
-    //      "order": [[ 0, "desc" ]],
-    //      "columnDefs": [
-    //         {
-    //         	"targets":[6],
-    //         	"visible":false
-    //         }
-    //     ],
-    //         initComplete: function () {
-    //         this.api().columns([4,5,6]).every( function () {
-    //             var column = this;
-    //             var select_name;
-
-    //             if (column[0][0] == 4) {
-    //             	select_name = 'unit';
-    //             }
-
-    //             if (column[0][0] == 5) {
-    //             	select_name = 'area';
-    //             }
-
-    //             if (column[0][0] == 6) {
-    //             	select_name = 'district';
-    //             }
-
-    //             var select = $('<select id="'+select_name+'" class="form-c"><option value="">Filter by '+select_name+'</option></select>')
-    //                 .appendTo( $("#tfilter") )
-    //                 .on( 'change', function () {
-    //                     var val = $.fn.dataTable.util.escapeRegex(
-    //                         $(this).val()
-    //                     );
-
-    //                     column
-    //                         .search( val ? '^'+val+'$' : '', true, false )
-    //                         .draw();
-    //                 } );
-
-    //             column.data().unique().sort().each( function ( d, j ) {
-    //                 select.append( '<option value="'+d+'">'+d+'</option>' )
-    //             } );
-    //         } );
-    //     }
-  	// });
 		  $('.table').on('click','.get-reason',function(){
 					var content = $(this).data('content');
 					$(".reason").html(content);
@@ -318,7 +212,7 @@ function rejectionReason(reason){
 				$("#r_app_appli_id").val(appli_id);
 			});
 
-	        $('.status-buttons li a.change-status-button').click(function(e){
+	        $(document).on('click', '.status-buttons li a.change-status-button', function(e){
 	            e.preventDefault();
 	            url = $(this).attr('href');
 	            swal({

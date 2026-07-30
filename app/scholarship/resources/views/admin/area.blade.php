@@ -69,10 +69,19 @@
       <div class="box">
         <div class="box-header">
           <h2 class="box-title"> Areas</h2>
-          
+          <div class="pull-right">
+            <a href="#" id="print-all" class="btn btn-default btn-sm" target="_blank">Print all</a>
+            <a href="#" id="export-csv" class="btn btn-default btn-sm">Excel</a>
+          </div>
         </div><!-- /.box-header -->
 
         <div class="box-body table-responsive " style="min-height:350px;over-flow:hidden">
+          <div id="tfilter">
+            <select id="filter-district" class="form-c">
+              <option value="">Filter by district</option>
+              @foreach($districts as $districtName)<option value="{{ $districtName }}">{{ $districtName }}</option>@endforeach
+            </select>
+          </div>
           <table class="table " id="result-table">
            <thead>
             <tr>
@@ -85,16 +94,7 @@
             </tr>
             </thead>
              <tbody>
-             @foreach($results as $result)
-             <tr>
-               <td>{{ $result->area }} </td>
-               <td>{{ $result->district->district }} </td>
-               <td>{{ isset($result->areaauth) ? $result->areaauth->area_president :''}} </td>
-               <td>{{ isset($result->areaauth) ? $result->areaauth->president_mobile : ''}} </td>
-               <td><a href="{{ route('admin_area_admin',['areaid'=>$result->id,'districtid'=>$result->district_id]) }}" class="btn btn-block btn-primary">Edit</a> </td>
-               <td><a href="{{ route('admin_area_delete',['id'=>$result->id]) }}" class="delete btn btn-block btn-danger">Delete</a> </td>
-             </tr>
-             @endforeach
+             {{-- Rows are loaded ten at a time from area-data. --}}
              </tbody>
           </table>
         </div>
@@ -107,8 +107,37 @@
   @parent
    <script type="text/javascript">
   $(document).ready(function(){
-$('#result-table').dataTable();
-    
+    // Paged on the server so the page no longer loads every area, each of
+    // which cost a query for its district and another for its office holders.
+    function areaFilters(d) {
+      d.district = $('#filter-district').val();
+    }
+
+    var areaTable = $('#result-table').DataTable({
+      processing: true,
+      serverSide: true,
+      deferRender: true,
+      pageLength: 10,
+      lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+      ajax: { url: "{{ route('area-data') }}", data: areaFilters },
+      order: [[1, 'asc']],
+      columnDefs: [{ targets: [4, 5], orderable: false, searchable: false }]
+    });
+
+    $('#filter-district').on('change', function () { areaTable.ajax.reload(); });
+
+    function areaExportUrl(format) {
+      var order = areaTable.order()[0] || [1, 'asc'];
+      return "{{ route('area-export') }}?" + $.param({
+        format: format,
+        district: $('#filter-district').val() || '',
+        search: areaTable.search() || '',
+        order: [{ column: order[0], dir: order[1] }]
+      });
+    }
+    $('#print-all').on('click', function (e) { e.preventDefault(); window.open(areaExportUrl('print'), '_blank'); });
+    $('#export-csv').on('click', function (e) { e.preventDefault(); window.location = areaExportUrl('csv'); });
+
 
               $('#result-table').on('click','.delete', function(e){
               e.preventDefault();

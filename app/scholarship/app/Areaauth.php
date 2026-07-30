@@ -2,10 +2,17 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 
-class Areaauth extends Model
-{   
+class Areaauth extends MongoModel
+{
+    /**
+     * Integer columns, so ids arriving as strings are cast.
+     *
+     * @var list<string>
+     */
+    protected $integerColumns = ['areaid', 'districtid'];
+   
   public $timestamps = false;
 
     public function area()

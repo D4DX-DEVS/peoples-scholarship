@@ -120,21 +120,25 @@ means "this container", and the database is not in this container — the
 connection is refused no matter what the port says. The same applies to
 `APP_URL` and `APP_DEBUG`.
 
-Attach the managed MySQL database to the app, then reference it with bindable
-variables rather than typing the values, so they survive a database
-resize or credential rotation:
+The application runs on MongoDB. Point it at the Atlas cluster with the
+connection string from Atlas (Connect → Drivers → PHP):
 
 ```ini
-DB_CONNECTION=mysql
-DB_HOST=${db.HOSTNAME}          # NOT 127.0.0.1
-DB_PORT=${db.PORT}              # managed MySQL uses 25060, not 3306
-DB_DATABASE=${db.DATABASE}
-DB_USERNAME=${db.USERNAME}
-DB_PASSWORD=${db.PASSWORD}      # mark as encrypted
-MYSQL_ATTR_SSL_CA=${db.CA_CERT} # managed MySQL requires TLS
+DB_CONNECTION=mongodb
+MONGODB_URI="mongodb+srv://user:password@cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority"
+MONGODB_DATABASE=ppf_scholership
 ```
 
-Substitute the component name you gave the database for `db`. The rest:
+Mark `MONGODB_URI` as **encrypted** — it contains the database password.
+
+> **Atlas network access.** App Platform containers do not have a stable
+> outbound IP, so an Atlas allowlist naming specific addresses will drop
+> the connection after any redeploy or scaling event. Either allow
+> `0.0.0.0/0` and rely on the connection string's credentials plus TLS,
+> or attach a dedicated egress IP to the app and allowlist that. A
+> refused connection that "worked yesterday" is almost always this.
+
+The rest:
 
 ```ini
 APP_ENV=production
@@ -156,6 +160,36 @@ above. Mark every secret as **encrypted**.
 > applicant personal data, treat having shipped it as an incident: set it to
 > `false`, redeploy, and rotate any credential that appeared on a page a
 > stranger could have loaded.
+
+### Moving the data from MySQL
+
+The application was migrated from MySQL to MongoDB. `php artisan mongo:import`
+copies every table across, and is meant to be run once, from a machine that
+can reach both databases:
+
+```bash
+# .env needs the MySQL credentials (DB_HOST/DB_PORT/...) as the source
+# and MONGODB_URI/MONGODB_DATABASE as the destination.
+php artisan mongo:import --fresh
+```
+
+`--fresh` drops each destination collection first, so the command is safe to
+re-run: it always produces a clean copy rather than duplicating documents. It
+prints a row count per collection and exits non-zero if any collection does
+not match the source, so a partial import cannot pass unnoticed.
+
+Two details it takes care of, both of which the application depends on:
+
+- **Ids are preserved.** Each row's integer `id` becomes the document `_id`,
+  so the foreign keys already stored in other tables still resolve. MongoDB
+  has no auto-increment, so a `counters` collection is seeded with the highest
+  id per collection and new records continue from there.
+- **Numeric columns stay numeric.** PDO returns most values as strings, and
+  MongoDB's `sum()` silently ignores non-numeric values — left as strings,
+  every grant total on the reports would read zero.
+
+Do not point the application at MongoDB until the import has been run and
+verified; the schema is not created by `artisan migrate`.
 
 ### Build-time vs run-time caching
 
