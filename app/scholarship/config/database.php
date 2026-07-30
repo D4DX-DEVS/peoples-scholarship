@@ -15,9 +15,15 @@ return [
     | the connection which will be utilized unless another connection
     | is explicitly specified when you execute a query / statement.
     |
+    | Fixed to mongodb rather than read from DB_CONNECTION: every model
+    | extends a MongoDB base class, so a stale DB_CONNECTION=mysql left in a
+    | deployment's environment produces a MySqlConnection that fails on the
+    | first query. The mysql connection below stays for the one-off
+    | app:import-mysql-to-mongo command, which names it explicitly.
+    |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => 'mongodb',
 
     /*
     |--------------------------------------------------------------------------
