@@ -2,9 +2,9 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 
-class Meeting extends Model
+class Meeting extends MongoModel
 {
     //
     protected $table = 'meetings';

@@ -2,12 +2,13 @@
 
 namespace App;
 
+use App\Support\HasIntegerKey;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use MongoDB\Laravel\Auth\User as Authenticatable;
 class User extends Authenticatable
 {
-    use Notifiable;
+    use Notifiable, HasIntegerKey;
 
     /**
      * The attributes that are mass assignable.

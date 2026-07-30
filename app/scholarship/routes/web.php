@@ -95,12 +95,16 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/changepassword', [AdminController::class, 'changePassword'])->name('changePassword');
 
     Route::get('/area', [AdminController::class, 'getAreaResults'])->name('admin-area');
+    Route::get('/area/data', [AdminController::class, 'areaData'])->name('area-data');
+    Route::get('/area/export', [AdminController::class, 'areaExport'])->name('area-export');
     Route::post('/area', [AdminController::class, 'addArea'])->name('admin-post-add-area');
     Route::get('/area/admin/{areaid}/{districtid}', [AdminController::class, 'getAreaAdmin'])->name('admin_area_admin');
     Route::post('/area/admin', [AdminController::class, 'addAreaAdmin'])->name('admin-post-add-area-admin');
     Route::get('/area/delete/{id}', [AdminController::class, 'removeArea'])->name('admin_area_delete');
 
     Route::get('/unit', [AdminController::class, 'getUnitResults'])->name('admin-unit');
+    Route::get('/unit/data', [AdminController::class, 'unitData'])->name('unit-data');
+    Route::get('/unit/export', [AdminController::class, 'unitExport'])->name('unit-export');
     Route::post('/unit', [AdminController::class, 'addUnit'])->name('admin-post-add-unit');
     Route::get('/unit/edit/{id}', [AdminController::class, 'getEditUnit'])->name('admin-edit-unit');
     Route::post('/unit/edit', [AdminController::class, 'postEditUnit'])->name('admin-post-edit-unit');
@@ -143,6 +147,10 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         Route::get('/cancel-grant/{id}', [ApplicationController::class, 'cancelGrant'])->name('cancel-grant');
         Route::get('/application/meeting-sheet/{id}', [ApplicationController::class, 'getMeetingSheet'])->name('meeting-sheet');
 
+        // The table fetches its rows from here, ten at a time.
+        Route::get('/data', [ApplicationController::class, 'listingData'])->name('applications-data');
+        Route::get('/export', [ApplicationController::class, 'exportListing'])->name('applications-export');
+
         // Declared last so the more specific routes above win. Keeps the
         // "get-applications-listing" name pointing here, as it always has.
         Route::get('/{status}', [ApplicationController::class, 'getListing'])->name('get-applications-listing');
@@ -164,7 +172,11 @@ Route::middleware('auth')->prefix('admin')->group(function () {
 
     Route::prefix('granted')->group(function () {
         Route::get('/', [GrantedController::class, 'getApplicationsGranted'])->name('get-files-granted');
+        Route::get('/data', [GrantedController::class, 'grantedData'])->name('granted-data');
+        Route::get('/export', [GrantedController::class, 'grantedExport'])->name('granted-export');
         Route::get('/installments-due', [GrantedController::class, 'getDuesThisMonth'])->name('get-installments-due-this-month');
+        Route::get('/installments-due/data', [GrantedController::class, 'duesData'])->name('dues-data');
+        Route::get('/installments-due/export', [GrantedController::class, 'duesExport'])->name('dues-export');
         Route::get('/installments/{id}', [GrantedController::class, 'getInstallments'])->name('edit-installments');
         Route::post('/installments/{id}', [GrantedController::class, 'postInstallments'])->name('save-installments');
         Route::post('/add/installment/{id}', [GrantedController::class, 'addInstallment'])->name('add-new-installment');

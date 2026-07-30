@@ -2,11 +2,18 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 use DB;
 
-class Application extends Model
+class Application extends MongoModel
 {
+    /**
+     * Integer columns, so ids arriving as strings are cast.
+     *
+     * @var list<string>
+     */
+    protected $integerColumns = ['area_id', 'attachments_exist', 'cat_id', 'course_id', 'district_id', 'grant_status', 'no_of_installments', 'persid', 'status', 'unit_id', 'year_id'];
+
 	/**
 	 * department to which the file belongs
 	 */

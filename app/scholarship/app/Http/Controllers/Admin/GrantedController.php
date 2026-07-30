@@ -12,9 +12,13 @@ use App\Status;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use DB;
+use App\Support\ExportsTables;
+use App\Support\FilterOptions;
 
 class GrantedController extends Controller
 {
+    use ExportsTables;
+
     /**
      * The Authenticated User implementation.
      *
@@ -34,8 +38,143 @@ class GrantedController extends Controller
     }
 
     public function getApplicationsGranted(){
-         $applications = Application::where('grant_status','>','0')->orderBy('id','desc')->get();
-         return view('admin.granted.granted-list')->with('applications',$applications);
+         // Rows come from grantedData() ten at a time; only the filter
+         // options are needed up front, and they come from the lookup tables
+         // so every value is offered rather than only those on page one.
+         // Only granted rows are listed, so the filters offer only values
+         // that appear on one.
+         $scope = ['grant_status' => ['$gt' => 0]];
+
+         return view('admin.granted.granted-list')
+             ->with('grantTypes', [6 => 'Documents Waiting', 7 => 'Forwaded to Accounts', 8 => 'Installment Due', 9 => 'Completed'])
+             ->with('filterCategories', FilterOptions::forRelated('applications', 'cat_id', \App\Category::class, 'catname', $scope))
+             ->with('filterUnits', FilterOptions::forRelated('applications', 'unit_id', \App\Unit::class, 'unit', $scope))
+             ->with('filterAreas', FilterOptions::forRelated('applications', 'area_id', \App\Area::class, 'area', $scope))
+             ->with('filterDistricts', FilterOptions::forRelated('applications', 'district_id', \App\District::class, 'district', $scope));
+    }
+
+    /**
+     * Column layout of the granted list, shared with its exports.
+     */
+    private function grantedColumns(): array
+    {
+        return [
+            0  => ['path' => 'id',                 'title' => 'ID'],
+            1  => ['path' => 'refno',              'title' => 'Appl. ID'],
+            2  => ['path' => 'person.personname',  'title' => 'Applicant Name'],
+            3  => ['path' => 'person.address',     'title' => 'Address'],
+            4  => ['path' => 'grant_status',       'title' => 'Status'],
+            5  => ['path' => 'granted_date',       'title' => 'Granted Date'],
+            6  => ['path' => 'category.catname',   'title' => 'Category'],
+            7  => ['path' => 'unit.unit',          'title' => 'Unit'],
+            8  => ['path' => 'area.area',          'title' => 'Area'],
+            9  => ['path' => 'district.district',  'title' => 'District'],
+            10 => ['path' => null, 'searchable' => false, 'orderable' => false, 'title' => 'Actions'],
+        ];
+    }
+
+    private function grantedQuery(): \App\Support\DataTableQuery
+    {
+        return new \App\Support\DataTableQuery(
+            collection: 'applications',
+            lookups: [
+                'person'   => ['from' => 'persons',    'localField' => 'persid'],
+                'unit'     => ['from' => 'unit',       'localField' => 'unit_id'],
+                'area'     => ['from' => 'area',       'localField' => 'area_id'],
+                'district' => ['from' => 'district',   'localField' => 'district_id'],
+                'category' => ['from' => 'categories', 'localField' => 'cat_id'],
+            ],
+            columns: $this->grantedColumns(),
+            baseMatch: ['grant_status' => ['$gt' => 0]],
+            filters: [
+                'district'     => 'district.district',
+                'area'         => 'area.area',
+                'unit'         => 'unit.unit',
+                'category'     => 'category.catname',
+                'grant_status' => ['path' => 'grant_status', 'numeric' => true],
+            ],
+        );
+    }
+
+    /**
+     * The four grant states, as the list has always labelled them.
+     */
+    private function grantStatusText($status): string
+    {
+        return match ((int) $status) {
+            6 => 'Documents Waiting',
+            7 => 'Forwaded to Accounts',
+            8 => 'Installment Due',
+            9 => 'Completed',
+            default => 'Undefined',
+        };
+    }
+
+    private function grantedModels(array $ids)
+    {
+        $models = Application::with(['person', 'unit', 'district', 'area', 'category'])
+            ->whereIn('id', $ids)->get()->keyBy('id');
+
+        return collect($ids)->map(fn ($id) => $models->get($id))->filter()->values();
+    }
+
+    /**
+     * Rows for the granted list.
+     */
+    public function grantedData(Request $request)
+    {
+        $page = $this->grantedQuery()->page($request);
+
+        $data = $this->grantedModels($page['ids'])->map(fn ($application) => [
+            e($application->id),
+            e($application->refno),
+            e(optional($application->person)->personname),
+            e(optional($application->person)->address),
+            e($this->grantStatusText($application->grant_status)),
+            $application->status !== 1 && $application->granted_date
+                ? e(date('d M Y', strtotime($application->granted_date))) : '',
+            e(optional($application->category)->catname),
+            e(optional($application->unit)->unit),
+            e(optional($application->area)->area),
+            e(optional($application->district)->district),
+            '<div class="btn-group">'
+            .'<a href="'.route('admin-app-edit', ['appli_id' => $application->id, 'pers_id' => $application->persid])
+                .'" target="_blank" class="noprint"> <button title="Edit" class="btn btn-warning btn-xs"> <i class="fa fa-pencil"></i> </button> </a>'
+            .'<a href="'.route('edit-installments', ['id' => $application->id])
+                .'" target="_blank" class="noprint"> <button title="Installments" class="btn btn-info btn-xs"> <i class="fa fa-money"></i> </button> </a>'
+            .'</div>',
+        ]);
+
+        return response()->json([
+            'draw'            => (int) $request->input('draw'),
+            'recordsTotal'    => $page['total'],
+            'recordsFiltered' => $page['filtered'],
+            'data'            => $data,
+        ]);
+    }
+
+    /**
+     * Print or download every granted row matching the current filters.
+     */
+    public function grantedExport(Request $request)
+    {
+        $request->merge(['start' => 0, 'length' => -1]);
+
+        $rows = $this->grantedModels($this->grantedQuery()->page($request)['ids'])
+            ->map(fn ($a) => [
+                $a->id,
+                $a->refno,
+                optional($a->person)->personname,
+                optional($a->person)->address,
+                $this->grantStatusText($a->grant_status),
+                $a->status !== 1 && $a->granted_date ? date('d M Y', strtotime($a->granted_date)) : '',
+                optional($a->category)->catname,
+                optional($a->unit)->unit,
+                optional($a->area)->area,
+                optional($a->district)->district,
+            ]);
+
+        return $this->exportResponse($request, 'Granted applications', 'granted.csv', $this->grantedColumns(), $rows);
     }
 
     public function getInstallments($id)
@@ -218,8 +357,108 @@ class GrantedController extends Controller
 
     public function getDuesThisMonth()
     {
-       $toDate = date('Y-m-d H:i:s',strtotime("+1 months"));
-       $installments = Installment::whereNotNull('due_date')->where('status','<','4')->where('due_date','<',$toDate)->get();
-       return view('admin.granted.installments-due')->with('installments',$installments);
+       // Rows come from duesData() ten at a time.
+       return view('admin.granted.installments-due');
+    }
+
+    /**
+     * Column layout of the dues list, shared with its exports.
+     */
+    private function duesColumns(): array
+    {
+        return [
+            0 => ['path' => 'application.refno',          'title' => 'Application number'],
+            1 => ['path' => 'application.applicant_name', 'title' => 'Name'],
+            2 => ['path' => 'installment_number',         'title' => 'Installment number'],
+            3 => ['path' => 'due_date',                   'title' => 'Due date'],
+            4 => ['path' => 'status',                     'title' => 'Status'],
+            5 => ['path' => 'due_date', 'searchable' => false, 'title' => ''],
+        ];
+    }
+
+    private function duesQuery(): \App\Support\DataTableQuery
+    {
+        // Dates are stored in 'Y-m-d H:i:s', which compares chronologically
+        // as a plain string, so the same bound the page always used works.
+        $toDate = date('Y-m-d H:i:s', strtotime('+1 months'));
+
+        return new \App\Support\DataTableQuery(
+            collection: 'installments',
+            lookups: [
+                'application' => ['from' => 'applications', 'localField' => 'appl_id'],
+            ],
+            columns: $this->duesColumns(),
+            baseMatch: [
+                'due_date' => ['$ne' => null, '$lt' => $toDate],
+                'status'   => ['$lt' => 4],
+            ],
+        );
+    }
+
+    private function duesModels(array $ids)
+    {
+        $models = Installment::with('application')->whereIn('id', $ids)->get()->keyBy('id');
+
+        return collect($ids)->map(fn ($id) => $models->get($id))->filter()->values();
+    }
+
+    private function dueDateText($dueDate): string
+    {
+        return ($dueDate === null || $dueDate === '0000-00-00 00:00:00')
+            ? 'Not Scheduled'
+            : date('d-M-Y', strtotime($dueDate));
+    }
+
+    /**
+     * Rows for the installments-due list.
+     */
+    public function duesData(Request $request)
+    {
+        $page = $this->duesQuery()->page($request);
+
+        $data = $this->duesModels($page['ids'])->map(function ($installment) {
+            $application = $installment->application;
+            $state       = $installment->getStatus($installment->status);
+
+            return [
+                $application
+                    ? '<a href="'.route('view-application', ['id' => $application->id]).'" target="_blank">'.e($application->refno).'</a>'
+                    : '',
+                e(optional($application)->applicant_name),
+                $application
+                    ? '<a href="'.route('edit-installments', ['id' => $application->id]).'" target="_blank">'.e($installment->installment_number).'</a>'
+                    : e($installment->installment_number),
+                e($this->dueDateText($installment->due_date)),
+                '<span class="label status bg-'.e($state['bgColour']).'">'.e($state['statusText']).'</span>',
+                e($installment->due_date),
+            ];
+        });
+
+        return response()->json([
+            'draw'            => (int) $request->input('draw'),
+            'recordsTotal'    => $page['total'],
+            'recordsFiltered' => $page['filtered'],
+            'data'            => $data,
+        ]);
+    }
+
+    /**
+     * Print or download every due installment matching the current search.
+     */
+    public function duesExport(Request $request)
+    {
+        $request->merge(['start' => 0, 'length' => -1]);
+
+        $rows = $this->duesModels($this->duesQuery()->page($request)['ids'])
+            ->map(fn ($i) => [
+                optional($i->application)->refno,
+                optional($i->application)->applicant_name,
+                $i->installment_number,
+                $this->dueDateText($i->due_date),
+                $i->getStatus($i->status)['statusText'],
+                $i->due_date,
+            ]);
+
+        return $this->exportResponse($request, 'Installments due', 'installments-due.csv', $this->duesColumns(), $rows);
     }
 }

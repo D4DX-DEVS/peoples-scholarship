@@ -122,10 +122,19 @@
       <div class="box">
         <div class="box-header">
           <h2 class="box-title">  Units</h2>
-          
+          <div class="pull-right">
+            <a href="#" id="print-all" class="btn btn-default btn-sm" target="_blank">Print all</a>
+            <a href="#" id="export-csv" class="btn btn-default btn-sm">Excel</a>
+          </div>
         </div><!-- /.box-header -->
 
         <div class="box-body table-responsive " style="min-height:350px;over-flow:hidden">
+          <div id="tfilter">
+            <select id="filter-district" class="form-c">
+              <option value="">Filter by district</option>
+              @foreach($districts as $districtName)<option value="{{ $districtName }}">{{ $districtName }}</option>@endforeach
+            </select>
+          </div>
           <table class="table datatable" id="result-table">
            <thead>
             <tr>
@@ -138,19 +147,7 @@
             </tr>
             </thead>
              <tbody>
-             @foreach($results as $result)
-             <tr>
-               <td>{{$result->unit}}</td>
-               <td>{{ $result->area->area }} </td>
-               <td>{{ $result->district->district }} </td>
-               <td>{{ $result->presiname }} </td>
-               <td>{{ $result->presinumber }} </td>
-               <td >
-               <a href="{{ route('admin-edit-unit',['id'=>$result->id]) }}" class="btn  btn-info">Edit</a> 
-               <a href="{{ route('admin_unit_delete',['id'=>$result->id]) }}" class="delete btn btn-danger">Delete</a> 
-               </td>
-             </tr>
-             @endforeach
+             {{-- Rows are loaded ten at a time from unit-data. --}}
              </tbody>
           </table>
         </div>
@@ -167,6 +164,40 @@
   <script src="{{ asset('pluggins/input-mask/jquery.inputmask.extensions.js') }}" type="text/javascript"></script>
   <script type="text/javascript">
   $(document).ready(function(){
+
+    // Units are paged on the server: this table used to render all 1528 rows
+    // and run a query per relation per row, which a remote database made
+    // unusable.
+    function unitFilters(d) {
+      d.district = $('#filter-district').val();
+    }
+
+    var unitTable = $('#result-table').DataTable({
+      processing: true,
+      serverSide: true,
+      deferRender: true,
+      pageLength: 10,
+      lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+      ajax: { url: "{{ route('unit-data') }}", data: unitFilters },
+      order: [[0, 'asc']],
+      columnDefs: [{ targets: [5], orderable: false, searchable: false }]
+    });
+
+    $('#filter-district').on('change', function () { unitTable.ajax.reload(); });
+
+    // Exports are rebuilt server-side, mirroring the table's own state.
+    function unitExportUrl(format) {
+      var order = unitTable.order()[0] || [0, 'asc'];
+      return "{{ route('unit-export') }}?" + $.param({
+        format: format,
+        district: $('#filter-district').val() || '',
+        search: unitTable.search() || '',
+        order: [{ column: order[0], dir: order[1] }]
+      });
+    }
+    $('#print-all').on('click', function (e) { e.preventDefault(); window.open(unitExportUrl('print'), '_blank'); });
+    $('#export-csv').on('click', function (e) { e.preventDefault(); window.location = unitExportUrl('csv'); });
+
     $('#addform').submit(function() {
     var unitadd = $("#unitadd").val();
     if (unitadd == '') {

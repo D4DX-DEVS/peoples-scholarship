@@ -35,20 +35,7 @@
 				<th></th>
 			</tfoot>
 			<tbody>
-				@foreach($installments as $installment)
-				<tr>
-				<td><a href="{{route('view-application',['id'=>$installment->application->id])}}" target="_blank">{{$installment->application->refno}}</a></td>
-				<td><{{$installment->application->applicant_name}}</td>
-				<td><a href="{{route('edit-installments',['id'=>$installment->application->id])}}" target="_blank">{{$installment->installment_number}}</a></td>
-				<td>@if ($installment->due_date=='0000-00-00 00:00:00' || $installment->due_date==null)
-					Not Scheduled
-				@else
-					{{date('d-M-Y',strtotime($installment->due_date))}}
-				@endif</td>
-				<td><span class="label status bg-{{$installment->getStatus($installment->status)['bgColour']}}" >{{$installment->getStatus($installment->status)['statusText']}}</span></td>
-				<td>{{$installment->due_date}}</td>
-				</tr>
-				@endforeach
+				{{-- Rows are loaded ten at a time from dues-data. --}}
 			</tbody>
 		</table>
 	</div>
@@ -73,25 +60,32 @@
      
 
    
-     var table= $('#result-table').DataTable({ 
-      "order": [[ 4, "asc" ]],
-      "columnDefs": [
-            {
-                "targets": [ 4 ],
-                "visible": false,
-            }]
-  		}); 
+     var table = $('#result-table').DataTable({
+      processing: true,
+      serverSide: true,
+      deferRender: true,
+      pageLength: 10,
+      lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+      ajax: { url: "{{ route('dues-data') }}" },
+      // Column 5 holds the raw due date and only exists to sort column 3 by.
+      order: [[ 5, "asc" ]],
+      columnDefs: [{ targets: [5], visible: false }]
+     });
 
-     // Apply the search
+     // Apply the search. Debounced, because each keystroke now costs a
+     // request to the server rather than a filter over rows already loaded.
          table.columns().every( function () {
              var that = this;
-      
+             var timer = null;
+
              $( 'input', this.footer() ).on( 'keyup change', function () {
-                 if ( that.search() !== this.value ) {
-                     that
-                         .search( this.value )
-                         .draw();
-                 }
+                 var input = this;
+                 clearTimeout( timer );
+                 timer = setTimeout( function () {
+                     if ( that.search() !== input.value ) {
+                         that.search( input.value ).draw();
+                     }
+                 }, 350 );
              } );
          } );    
   });

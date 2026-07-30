@@ -2,9 +2,9 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 
-class Status extends Model
+class Status extends MongoModel
 {
 
     protected $table = 'statuses';

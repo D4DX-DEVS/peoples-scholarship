@@ -2,10 +2,17 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 
-class Unit extends Model
+class Unit extends MongoModel
 {
+    /**
+     * Integer columns, so ids arriving as strings are cast.
+     *
+     * @var list<string>
+     */
+    protected $integerColumns = ['area_id', 'district_id'];
+
     //
     protected $table = 'unit';
 
@@ -34,7 +41,7 @@ class Unit extends Model
                 $appCount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->count();
             }
             else{
-                $appCount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+                $appCount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
             }
         }
         else{
@@ -42,7 +49,7 @@ class Unit extends Model
                 $appCount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->count();
             }
             else{
-                $appCount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+                $appCount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
             }
         }
         return $appCount;
@@ -58,7 +65,7 @@ class Unit extends Model
                 $appCount = Application::where('unit_id',$this->id)->where('status',13)->where('cat_id',$category)->count();
             }
             else{
-                $appCount = Application::where('unit_id',$this->id)->where('status',13)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+                $appCount = Application::where('unit_id',$this->id)->where('status',13)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
             }
         }
         else{
@@ -66,7 +73,7 @@ class Unit extends Model
                 $appCount = Application::where('unit_id',$this->id)->where('status',13)->count();
             }
             else{
-                $appCount = Application::where('unit_id',$this->id)->where('status',13)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+                $appCount = Application::where('unit_id',$this->id)->where('status',13)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
             }
         }
         return $appCount;
@@ -82,7 +89,7 @@ class Unit extends Model
                 $totalAmount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->sum('amount_granted');
             }
             else{
-                $totalAmount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+                $totalAmount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
             }
         }
         else{
@@ -90,7 +97,7 @@ class Unit extends Model
                 $totalAmount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->sum('amount_granted');
             }
             else{
-                $totalAmount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+                $totalAmount = Application::where('unit_id',$this->id)->where('grant_status','>',0)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
             }
         }
         return $totalAmount;
@@ -106,7 +113,7 @@ class Unit extends Model
                 $totalAmount = Application::where('unit_id',$this->id)->where('status',13)->where('cat_id',$category)->sum('amount_granted');
             }
             else{
-                $totalAmount = Application::where('unit_id',$this->id)->where('status',13)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+                $totalAmount = Application::where('unit_id',$this->id)->where('status',13)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
             }
         }
         else{
@@ -114,7 +121,7 @@ class Unit extends Model
                 $totalAmount = Application::where('unit_id',$this->id)->where('status',13)->sum('amount_granted');
             }
             else{
-                $totalAmount = Application::where('unit_id',$this->id)->where('status',13)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+                $totalAmount = Application::where('unit_id',$this->id)->where('status',13)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
             }
         }
         return $totalAmount;

@@ -2,9 +2,9 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 
-class District extends Model
+class District extends MongoModel
 {
     protected $table = 'district';
     public $timestamps = false;
@@ -27,7 +27,7 @@ class District extends Model
           $appCount = Application::where('district_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->count();
         }
         else{
-          $appCount = Application::where('district_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+          $appCount = Application::where('district_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
         }
       }
       else{
@@ -35,7 +35,7 @@ class District extends Model
           $appCount = Application::where('district_id',$this->id)->where('grant_status','>',0)->count();
         }
         else{
-          $appCount = Application::where('district_id',$this->id)->where('grant_status','>',0)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+          $appCount = Application::where('district_id',$this->id)->where('grant_status','>',0)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
         }
       }
       return $appCount;
@@ -51,7 +51,7 @@ class District extends Model
           $appCount = Application::where('district_id',$this->id)->where('status',8)->where('cat_id',$category)->count();
         }
         else{
-          $appCount = Application::where('district_id',$this->id)->where('status',8)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+          $appCount = Application::where('district_id',$this->id)->where('status',8)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
         }
       }
       else{
@@ -59,7 +59,7 @@ class District extends Model
           $appCount = Application::where('district_id',$this->id)->where('status',8)->count();
         }
         else{
-          $appCount = Application::where('district_id',$this->id)->where('status',8)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+          $appCount = Application::where('district_id',$this->id)->where('status',8)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
         }
       }
       return $appCount;
@@ -75,7 +75,7 @@ class District extends Model
           $totalAmount = Application::where('district_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->sum('amount_granted');
         }
         else{
-          $totalAmount = Application::where('district_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+          $totalAmount = Application::where('district_id',$this->id)->where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
         }
       }
       else{
@@ -83,7 +83,7 @@ class District extends Model
           $totalAmount = Application::where('district_id',$this->id)->where('grant_status','>',0)->sum('amount_granted');
         }
         else{
-          $totalAmount = Application::where('district_id',$this->id)->where('grant_status','>',0)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+          $totalAmount = Application::where('district_id',$this->id)->where('grant_status','>',0)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
         }
       }
       return $totalAmount;
@@ -99,7 +99,7 @@ class District extends Model
           $totalAmount = Application::where('district_id',$this->id)->where('status',8)->where('cat_id',$category)->sum('amount_granted');
         }
         else{
-          $totalAmount = Application::where('district_id',$this->id)->where('status',8)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+          $totalAmount = Application::where('district_id',$this->id)->where('status',8)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
         }
       }
       else{
@@ -107,7 +107,7 @@ class District extends Model
           $totalAmount = Application::where('district_id',$this->id)->where('status',8)->sum('amount_granted');
         }
         else{
-          $totalAmount = Application::where('district_id',$this->id)->where('status',8)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+          $totalAmount = Application::where('district_id',$this->id)->where('status',8)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
         }
       }
       return $totalAmount;
@@ -124,7 +124,7 @@ class District extends Model
           $appCount = Application::where('grant_status','>',0)->where('cat_id',$category)->count();
         }
         else{
-          $appCount = Application::where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+          $appCount = Application::where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
         }
       }
       else{
@@ -132,7 +132,7 @@ class District extends Model
           $appCount = Application::where('grant_status','>',0)->count();
         }
         else{
-          $appCount = Application::where('grant_status','>',0)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+          $appCount = Application::where('grant_status','>',0)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
         }
       }
 
@@ -149,7 +149,7 @@ class District extends Model
           $appCount = Application::where('status',8)->where('cat_id',$category)->count();
         }
         else{
-          $appCount = Application::where('status',8)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+          $appCount = Application::where('status',8)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
         }
       }
       else{
@@ -157,7 +157,7 @@ class District extends Model
           $appCount = Application::where('status',8)->count();
         }
         else{
-          $appCount = Application::where('status',8)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->count();
+          $appCount = Application::where('status',8)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->count();
         }
       }
       return $appCount;
@@ -173,7 +173,7 @@ class District extends Model
           $totalAmount = Application::where('grant_status','>',0)->where('cat_id',$category)->sum('amount_granted');
         }
         else{
-          $totalAmount = Application::where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+          $totalAmount = Application::where('grant_status','>',0)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
         }
       }
       else{
@@ -181,7 +181,7 @@ class District extends Model
           $totalAmount = Application::where('grant_status','>',0)->sum('amount_granted');
         }
         else{
-          $totalAmount = Application::where('grant_status','>',0)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+          $totalAmount = Application::where('grant_status','>',0)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
         }
       }
       return $totalAmount;
@@ -197,7 +197,7 @@ class District extends Model
           $totalAmount = Application::where('status',8)->where('cat_id',$category)->sum('amount_granted');
         }
         else{
-          $totalAmount = Application::where('status',8)->where('cat_id',$category)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+          $totalAmount = Application::where('status',8)->where('cat_id',$category)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
         }
       }
       else{
@@ -205,7 +205,7 @@ class District extends Model
           $totalAmount = Application::where('status',8)->sum('amount_granted');
         }
         else{
-          $totalAmount = Application::where('status',8)->whereBetween('granted_date', [$date1.'%', $date2.'%'])->sum('amount_granted');
+          $totalAmount = Application::where('status',8)->whereBetween('granted_date', [$date1.' 00:00:00', $date2.' 00:00:00'])->sum('amount_granted');
         }
       }
       return $totalAmount;

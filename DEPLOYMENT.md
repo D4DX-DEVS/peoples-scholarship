@@ -109,6 +109,107 @@ rm -f app.zip app/scholorship.zip ppf_scholership.sql
 
 ---
 
+## App Platform configuration
+
+Sections 1–6 below describe the **Droplet** path. On App Platform there is no
+server to set up: configuration is entirely environment variables set in the
+app's console (Settings → your component → Environment Variables).
+
+**Never copy your local `.env` into these variables.** `DB_HOST=127.0.0.1`
+means "this container", and the database is not in this container — the
+connection is refused no matter what the port says. The same applies to
+`APP_URL` and `APP_DEBUG`.
+
+The application runs on MongoDB. Point it at the Atlas cluster with the
+connection string from Atlas (Connect → Drivers → PHP):
+
+```ini
+DB_CONNECTION=mongodb
+MONGODB_URI="mongodb+srv://user:password@cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority"
+MONGODB_DATABASE=ppf_scholership
+```
+
+Mark `MONGODB_URI` as **encrypted** — it contains the database password.
+
+> **Atlas network access.** App Platform containers do not have a stable
+> outbound IP, so an Atlas allowlist naming specific addresses will drop
+> the connection after any redeploy or scaling event. Either allow
+> `0.0.0.0/0` and rely on the connection string's credentials plus TLS,
+> or attach a dedicated egress IP to the app and allowlist that. A
+> refused connection that "worked yesterday" is almost always this.
+
+The rest:
+
+```ini
+APP_ENV=production
+APP_DEBUG=false                 # see the warning below
+APP_KEY=base64:...              # generate once, never change; mark encrypted
+APP_URL=https://your-app.ondigitalocean.app
+LOG_CHANNEL=stderr              # App Platform captures stdout/stderr, not files
+LOG_LEVEL=error
+SESSION_SECURE_COOKIE=true
+```
+
+Plus the `FILESYSTEM_DISK` and `DO_SPACES_*` values from "Object storage"
+above. Mark every secret as **encrypted**.
+
+> **`APP_DEBUG=true` in production is a data leak, not just untidy.** Laravel's
+> debug error page publishes the full stack trace, absolute file paths,
+> database host, port and name, the loaded configuration, and the visitor's IP
+> — to anyone who can trigger an error on a public URL. On an app holding
+> applicant personal data, treat having shipped it as an incident: set it to
+> `false`, redeploy, and rotate any credential that appeared on a page a
+> stranger could have loaded.
+
+### Moving the data from MySQL
+
+The application was migrated from MySQL to MongoDB. `php artisan mongo:import`
+copies every table across, and is meant to be run once, from a machine that
+can reach both databases:
+
+```bash
+# .env needs the MySQL credentials (DB_HOST/DB_PORT/...) as the source
+# and MONGODB_URI/MONGODB_DATABASE as the destination.
+php artisan mongo:import --fresh
+```
+
+`--fresh` drops each destination collection first, so the command is safe to
+re-run: it always produces a clean copy rather than duplicating documents. It
+prints a row count per collection and exits non-zero if any collection does
+not match the source, so a partial import cannot pass unnoticed.
+
+Two details it takes care of, both of which the application depends on:
+
+- **Ids are preserved.** Each row's integer `id` becomes the document `_id`,
+  so the foreign keys already stored in other tables still resolve. MongoDB
+  has no auto-increment, so a `counters` collection is seeded with the highest
+  id per collection and new records continue from there.
+- **Numeric columns stay numeric.** PDO returns most values as strings, and
+  MongoDB's `sum()` silently ignores non-numeric values — left as strings,
+  every grant total on the reports would read zero.
+
+Do not point the application at MongoDB until the import has been run and
+verified; the schema is not created by `artisan migrate`.
+
+### Build-time vs run-time caching
+
+`php artisan config:cache` bakes the *current* environment into
+`bootstrap/cache/config.php`. If it runs during the **build** while the
+database variables are scoped run-time-only, the cache is written from
+defaults and the app connects to `127.0.0.1:3306` forever after — the cached
+file wins over the real environment at runtime.
+
+Either scope those variables to **RUN_AND_BUILD_TIME**, or move the caching
+into the run command so it executes with the real environment:
+
+```
+php artisan config:cache && php artisan route:cache && php artisan view:cache && heroku-php-apache2 app/scholarship/public/
+```
+
+`view:cache` is safe at build time; `config:cache` is the one that bites.
+
+---
+
 ## 1. Server setup
 
 Ubuntu 24.04 LTS Droplet, as root:

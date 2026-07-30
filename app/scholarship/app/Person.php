@@ -2,11 +2,18 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 use Illuminate\Support\Facades\Storage;
 
-class Person extends Model
+class Person extends MongoModel
 {
+    /**
+     * Integer columns, so ids arriving as strings are cast.
+     *
+     * @var list<string>
+     */
+    protected $integerColumns = ['age', 'area', 'district', 'unit'];
+
     /**
      * The table associated with the model.
      *
