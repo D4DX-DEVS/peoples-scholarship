@@ -98,6 +98,7 @@ class HomeController extends Controller
                 $application->year_id = $yearid;
                 $application->applicant_name = $request->name;
                 $application->persid = $person->id;
+                $application->status = 1; // Registered
                 session(['person_id' => $person->id]);
                 if($application->save())
                 {
