@@ -2,10 +2,17 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 
-class Statistic extends Model
+class Statistic extends MongoModel
 {
+    /**
+     * Integer columns, so ids arriving as strings are cast.
+     *
+     * @var list<string>
+     */
+    protected $integerColumns = ['appl_id', 'meeting_id'];
+
 	/**
 	 * meeting associated with this status change
 	 */

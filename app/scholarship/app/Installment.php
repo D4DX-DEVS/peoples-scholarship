@@ -2,10 +2,17 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 
-class Installment extends Model
+class Installment extends MongoModel
 {
+    /**
+     * Integer columns, so ids arriving as strings are cast.
+     *
+     * @var list<string>
+     */
+    protected $integerColumns = ['appl_id', 'installment_number', 'status'];
+
 	public $timestamps = false;
 	/**
 	 * file the installment belongs to.

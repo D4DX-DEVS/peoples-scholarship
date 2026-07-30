@@ -7,10 +7,10 @@ use Validator, Redirect, Auth;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\User;
+use App\Application;
 use App\Category;
 use App\Course;
 use App\Yearsetting;
-use DB;
 use Session;
 use Route;
 
@@ -124,7 +124,7 @@ class SettingsController extends Controller
     public function removeCategory($id){
         $category = Category::find($id);              
         if ($category->delete()) {
-            DB::delete('DELETE FROM courses WHERE cat_id = '.$id);
+            Course::where('cat_id', $id)->delete();
             return redirect()->route('admin-settings')->with('success','Category and related Courses successfully deleted');           
         }
         return redirect()->back()->with('fail','Something went wrong. Please try again');
@@ -162,7 +162,7 @@ class SettingsController extends Controller
     public function removeYear($id){
         $cyear = Yearsetting::find($id);              
         if ($cyear->delete()) {
-            DB::delete('DELETE FROM applications WHERE year_id = '.$id);
+            Application::where('year_id', $id)->delete();
             return redirect()->route('admin-year-settings')->with('success','Year and related Applications successfully deleted');           
         }
         return redirect()->back()->with('fail','Something went wrong. Please try again');

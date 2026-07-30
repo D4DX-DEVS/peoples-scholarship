@@ -14,7 +14,6 @@ use App\Status;
 use App\Statistic;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
-use DB;
 
 class MeetingController extends Controller
 {
@@ -110,12 +109,14 @@ class MeetingController extends Controller
                             break;
                     }
                 }  
-                $lastMeetingStatistic = Statistic::where('appl_id',$application->id)
-                ->with('Application')
-                ->whereHas('Application', function($query) use ($application) {
-                    $query->where('statistics.appl_id','=',$application->id )->where('applications.status','=',4);
-                })
-                ->orderBy('id','desc')->first();
+                // The old whereHas filtered on the related application's
+                // status, and that application is $application itself, so
+                // the condition is decidable here without a join.
+                $lastMeetingStatistic = $application->status == 4
+                    ? Statistic::where('appl_id',$application->id)
+                        ->with('Application')
+                        ->orderBy('id','desc')->first()
+                    : null;
             if(($application->status==4) && ($lastMeetingStatistic && $lastMeetingStatistic->meeting_id == $id) && (!in_array($application, $applications))){
             $noofApplications++;
             array_push($applications, $application);
@@ -179,12 +180,14 @@ class MeetingController extends Controller
             if(!$application){
                 continue;
             }
-            $lastMeetingStatistic = Statistic::where('appl_id',$application->id)
-            ->with('Application')
-            ->whereHas('Application', function($query) use ($application) {
-                $query->where('statistics.appl_id','=',$application->id )->where('applications.status','=',4);
-            })
-            ->orderBy('id','desc')->first();
+            // The old whereHas filtered on the related application's status,
+            // and that application is $application itself, so the condition
+            // is decidable here without a join.
+            $lastMeetingStatistic = $application->status == 4
+                ? Statistic::where('appl_id',$application->id)
+                    ->with('Application')
+                    ->orderBy('id','desc')->first()
+                : null;
             if(($application->status==4) && ($lastMeetingStatistic && $lastMeetingStatistic->meeting_id == $id) &&(!in_array($application, $applications))){
              array_push($applications, $application);
             }
@@ -199,7 +202,7 @@ class MeetingController extends Controller
         $meeting = Meeting::find($id);
 
         if($meeting->delete()){
-            DB::delete('DELETE FROM statistics WHERE meeting_id = '.$id);
+            Statistic::where('meeting_id', $id)->delete();
             return redirect()->back()->with('success','Successfully Deleted Meeting');
         }
         else{

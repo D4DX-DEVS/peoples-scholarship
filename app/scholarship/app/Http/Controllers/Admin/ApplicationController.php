@@ -20,11 +20,15 @@ use App\Areaauth;
 use App\Meeting;
 use App\Installment;
 use App\Statistic;
+use App\Support\ExportsTables;
+use App\Support\FilterOptions;
 
 use Route;
 
 class ApplicationController extends Controller
 {
+    use ExportsTables;
+
     /**
      * Create a new controller instance.
      *
@@ -38,20 +42,151 @@ class ApplicationController extends Controller
 
     public function getListing($status=null)
     {
-        $status_text=$status;
-        $yearsetting=Yearsetting::orderBy('id', 'desc')->first();
-        if($status ==null)
-        {
-            $applications = Application::orderBy('id', 'desc')->get();
-        } 
-        else {
-            $status_text=ucfirst($status);
-            $statusid=Status::where('status_text',$status_text)->first()->id;
-            $applications = Application::where('status',$statusid)->orderBy('id', 'desc')->get();
-        } 
-        return view('admin.applications.listing')->with('yearsetting',$yearsetting)
-                                                ->with('applications',$applications)
-                                                ->with('status',$status_text);    
+        $status_text = $status;
+        $yearsetting = Yearsetting::orderBy('id', 'desc')->first();
+
+        if ($status !== null) {
+            $status_text = ucfirst($status);
+        }
+
+        // Rows are fetched by listingData() ten at a time; only the filter
+        // options are needed up front. They cover every page of results, not
+        // just the first, but are limited to values that actually appear on
+        // an application — see FilterOptions.
+        $scope = $this->listingScope($status);
+
+        return view('admin.applications.listing')
+            ->with('yearsetting', $yearsetting)
+            ->with('status', $status_text)
+            ->with('filterUnits', FilterOptions::forRelated('applications', 'unit_id', Unit::class, 'unit', $scope))
+            ->with('filterAreas', FilterOptions::forRelated('applications', 'area_id', Area::class, 'area', $scope))
+            ->with('filterDistricts', FilterOptions::forRelated('applications', 'district_id', District::class, 'district', $scope));
+    }
+
+    /**
+     * Column layout of the applications listing, shared by the table
+     * endpoint and the exports so they always agree.
+     */
+    private function listingColumns(): array
+    {
+        return [
+            0 => ['path' => 'refno',             'title' => 'ID'],
+            1 => ['path' => 'person.personname', 'title' => 'Name'],
+            2 => ['path' => 'created_at',        'title' => 'Date'],
+            3 => ['path' => 'person.mobile',     'title' => 'Phone'],
+            4 => ['path' => 'unit.unit',         'title' => 'Unit'],
+            5 => ['path' => 'area.area',         'title' => 'Area'],
+            6 => ['path' => 'district.district', 'title' => 'District'],
+            7 => ['path' => 'course.coursename', 'title' => 'Course'],
+            8 => ['path' => null, 'searchable' => false, 'orderable' => false, 'title' => 'Action'],
+        ];
+    }
+
+    /**
+     * The base filter for this listing: all applications, or one status.
+     */
+    private function listingScope(?string $status): array
+    {
+        if ($status === null || $status === '') {
+            return [];
+        }
+
+        $matched = Status::where('status_text', ucfirst($status))->first();
+
+        // An unknown status must return nothing rather than everything.
+        return ['status' => $matched ? (int) $matched->id : -1];
+    }
+
+    private function listingQuery(?string $status): \App\Support\DataTableQuery
+    {
+        $baseMatch = $this->listingScope($status);
+
+        return new \App\Support\DataTableQuery(
+            collection: 'applications',
+            lookups: [
+                'person'   => ['from' => 'persons',  'localField' => 'persid'],
+                'unit'     => ['from' => 'unit',     'localField' => 'unit_id'],
+                'area'     => ['from' => 'area',     'localField' => 'area_id'],
+                'district' => ['from' => 'district', 'localField' => 'district_id'],
+                'course'   => ['from' => 'courses',  'localField' => 'course_id'],
+            ],
+            columns: $this->listingColumns(),
+            baseMatch: $baseMatch,
+            filters: [
+                'unit'     => 'unit.unit',
+                'area'     => 'area.area',
+                'district' => 'district.district',
+            ],
+        );
+    }
+
+    /**
+     * Load the given ids as models, in that order, with the relations the
+     * rows render eager loaded.
+     */
+    private function listingModels(array $ids)
+    {
+        $models = Application::with(['person', 'unit', 'district', 'area', 'course', 'getStatus'])
+            ->whereIn('id', $ids)->get()->keyBy('id');
+
+        return collect($ids)->map(fn ($id) => $models->get($id))->filter()->values();
+    }
+
+    /**
+     * Rows for the applications table (DataTables server-side endpoint).
+     */
+    public function listingData(Request $request)
+    {
+        $page = $this->listingQuery($request->input('status'))->page($request);
+
+        $data = $this->listingModels($page['ids'])->map(fn ($applicant) => [
+            '<div><a href="'.route('view-application', ['id' => $applicant->id]).'" title="View Application">'
+                .e($applicant->refno).'</a></div>',
+            e(optional($applicant->person)->personname),
+            e($applicant->created_at),
+            e(optional($applicant->person)->mobile),
+            e(optional($applicant->unit)->unit),
+            e(optional($applicant->area)->area),
+            e(optional($applicant->district)->district),
+            e(optional($applicant->course)->coursename ?: $applicant->course_other),
+            view('admin.applications._action', compact('applicant'))->render(),
+        ]);
+
+        return response()->json([
+            'draw'            => (int) $request->input('draw'),
+            'recordsTotal'    => $page['total'],
+            'recordsFiltered' => $page['filtered'],
+            'data'            => $data,
+        ]);
+    }
+
+    /**
+     * Print or download every row matching the current search and filters.
+     *
+     * The table only ever holds ten rows in the browser, so "Print all" and
+     * the spreadsheet export cannot come from the page; they are rebuilt
+     * here against the same filters the table is showing.
+     */
+    public function exportListing(Request $request)
+    {
+        // length -1 tells the query to skip the page limit.
+        $request->merge(['start' => 0, 'length' => -1]);
+
+        $rows = $this->listingModels($this->listingQuery($request->input('status'))->page($request)['ids'])
+            ->map(fn ($a) => [
+                $a->refno,
+                optional($a->person)->personname,
+                $a->created_at,
+                optional($a->person)->mobile,
+                optional($a->unit)->unit,
+                optional($a->area)->area,
+                optional($a->district)->district,
+                optional($a->course)->coursename ?: $a->course_other,
+            ]);
+
+        $title = 'Applications'.($request->input('status') ? ' — '.ucfirst($request->input('status')) : '');
+
+        return $this->exportResponse($request, $title, 'applications.csv', $this->listingColumns(), $rows);
     }
 
     public function getAppEdit($appli_id, $pers_id)
@@ -350,11 +485,11 @@ class ApplicationController extends Controller
      */
     public function getMeetingSheet($id){
         $application = Application::find($id);
+        // The old whereHas compared the related application's status against
+        // $application->status — the same row on both sides, so it never
+        // filtered anything out.
         $current_statistic = Statistic::where('appl_id',$application->id)
         ->with('Application')
-        ->whereHas('Application', function($query) use ($application) {
-            $query->where('statistics.appl_id','=',$application->id )->where('applications.status','=',$application->status);
-        })
         ->orderBy('id','desc')->first();
         return view('admin.meeting-sheet')->with('application',$application)->with('current_statistic',$current_statistic);
     }

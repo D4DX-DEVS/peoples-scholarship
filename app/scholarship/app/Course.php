@@ -2,11 +2,18 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\MongoModel;
 
-class Course extends Model
+class Course extends MongoModel
 
 {
+    /**
+     * Integer columns, so ids arriving as strings are cast.
+     *
+     * @var list<string>
+     */
+    protected $integerColumns = ['cat_id', 'course_enabled'];
+
     /**
  * The table associated with the model.
  *

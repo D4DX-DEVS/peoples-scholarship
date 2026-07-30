@@ -30,7 +30,28 @@
 		<h3 class="box-title">Applications Granted</h3>=		
 	</div>
 	<div class="box-body table-responsive" style="min-height:300px;over-flow:hidden">
-		<div id="tfilter"></div>
+		<div id="tfilter">
+			<select id="filter-grant-status" class="form-c">
+				<option value="">Filter by grant type</option>
+				@foreach($grantTypes as $code => $label)<option value="{{ $code }}">{{ $label }}</option>@endforeach
+			</select>
+			<select id="filter-category" class="form-c">
+				<option value="">Filter by category</option>
+				@foreach($filterCategories as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
+			</select>
+			<select id="filter-unit" class="form-c">
+				<option value="">Filter by unit</option>
+				@foreach($filterUnits as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
+			</select>
+			<select id="filter-area" class="form-c">
+				<option value="">Filter by area</option>
+				@foreach($filterAreas as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
+			</select>
+			<select id="filter-district" class="form-c">
+				<option value="">Filter by district</option>
+				@foreach($filterDistricts as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
+			</select>
+		</div>
 		<table class="table table-bordered table-hover" id="result-table">
 			<thead>
 				<th>ID</th>
@@ -46,41 +67,7 @@
 				<th width="80">Actions</th>
 			</thead>
 			<tbody>
-				@foreach($applications as $application)
-				<tr>
-					<td>{{$application->id}}</td>
-					<td>{{$application->refno}}</td>
-					<td>{{$application->person->personname}}</td>
-					<td>{{$application->person->address}}</td>
-					<td>
-						@if ($application->grant_status===6)
-							Documents Waiting
-						@elseif($application->grant_status===7)
-							Forwaded to Accounts
-						@elseif($application->grant_status===8)
-							Installment Due
-						@elseif($application->grant_status===9)
-							Completed						
-						@else
-						Undefined
-						@endif
-					</td>
-					<td>
-					@if ($application->status!==1)
-					{{date('d M Y',strtotime($application->granted_date))}}
-					@endif
-					</td>
-					<td>{{$application->category->catname}}</td>
-					<td>{{$application->unit->unit}}</td>
-					<td>{{$application->area->area}}</td>
-					<td>{{$application->district->district}}</td>
-					<td><div class="btn-group">
-						<a href="{{ route('admin-app-edit',['appli_id'=> $application->id,'pers_id'=>$application->persid])}}" target="_blank" class="noprint"> <button title="Edit" class="btn btn-warning btn-xs"> <i class="fa fa-pencil"></i> </button> </a>
-						<a href="{{ route('edit-installments',['id'=> $application->id])}}" target="_blank" class="noprint"> <button title="Installments" class="btn btn-info btn-xs"> <i class="fa fa-money"></i> </button> </a>
-					</div>
-					</td>
-				</tr>
-				@endforeach
+				{{-- Rows are loaded ten at a time from granted-data. --}}
 			</tbody>
 		</table>
 	</div>
@@ -92,88 +79,61 @@
 @section('js')
   @parent
   <script type="text/javascript">
-  	var table = $("#result-table").DataTable({
-  		"dom" : "<'row'<'col-md-3'l><'col-md-6'B><'col-md-3 pull-right'f>>" +"t"+
-					"<<'col-md-5'i><'col-md-6 pull-right'p>>",
-     	"buttons": [{
-        "extend":'print',
-        "exportOptions":{
-        	"columns":':visible',
-        }    },
-        {
-        "extend":'excel',
-        "exportOptions":{
-        	"columns":':visible',
-        }    },
-        "colvis"],
-         "order": [[ 0, "desc" ]],
-         "columnDefs": [
-            {
-                "targets": [ 0 ],
-                "visible": false,
-                "searchable": false
-            },
-            {
-            	"targets":[8],
-            	"visible":false
-            },
-            {
-            	"targets":[4],
-            	"visible":false
-            }
-        ],
-            initComplete: function () {
-            this.api().columns([4,6,7,8,9]).every( function () {
-                var column = this;
-                var select_name;
-                
-                if (column[0][0] == 4) {
-                	select_name = 'grant type';
-                }
+	var grantedFilterIds = ['#filter-grant-status', '#filter-category', '#filter-unit', '#filter-area', '#filter-district'];
 
-                if (column[0][0] == 6) {
-                	select_name = 'Category';
-                }
+	function grantedFilters(d) {
+		d.grant_status = $('#filter-grant-status').val();
+		d.category     = $('#filter-category').val();
+		d.unit         = $('#filter-unit').val();
+		d.area         = $('#filter-area').val();
+		d.district     = $('#filter-district').val();
+	}
 
-                if (column[0][0] == 7) {
-                	select_name = 'unit';
-                }
+	var table = $("#result-table").DataTable({
+		processing: true,
+		serverSide: true,
+		deferRender: true,
+		pageLength: 10,
+		lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+		ajax: { url: "{{ route('granted-data') }}", data: grantedFilters },
+		dom: "<'row'<'col-md-3'l><'col-md-6'B><'col-md-3 pull-right'f>>" + "t" +
+		     "<<'col-md-5'i><'col-md-6 pull-right'p>>",
+		buttons: [
+			{
+				// Rebuilt server-side: the page only holds the current ten rows.
+				text: 'Print all',
+				action: function () { window.open(grantedExportUrl('print'), '_blank'); }
+			},
+			{
+				text: 'Excel',
+				action: function () { window.location = grantedExportUrl('csv'); }
+			},
+			'colvis'
+		],
+		order: [[1, "desc"]],
+		columnDefs: [
+			{ targets: [0], visible: false, searchable: false },
+			{ targets: [4], visible: false },
+			{ targets: [8], visible: false },
+			{ targets: [10], orderable: false, searchable: false }
+		]
+	});
 
-                if (column[0][0] == 8) {
-                	select_name = 'area';
-                }
+	function grantedExportUrl(format) {
+		var order = table.order()[0] || [1, 'desc'];
+		return "{{ route('granted-export') }}?" + $.param({
+			format: format,
+			grant_status: $('#filter-grant-status').val() || '',
+			category: $('#filter-category').val() || '',
+			unit: $('#filter-unit').val() || '',
+			area: $('#filter-area').val() || '',
+			district: $('#filter-district').val() || '',
+			search: table.search() || '',
+			order: [{ column: order[0], dir: order[1] }]
+		});
+	}
 
-                if (column[0][0] == 9) {
-                	select_name = 'district';
-                }
+	$(grantedFilterIds.join(',')).on('change', function () { table.ajax.reload(); });
 
-                var select = $('<select id="'+select_name+'" class="form-c"><option value="">Filter by '+select_name+'</option></select>')
-                    .appendTo( $("#tfilter") )
-                    .on( 'change', function () {
-                        var val = $.fn.dataTable.util.escapeRegex(
-                            $(this).val()
-                        );
- 
-                        column
-                            .search( val ? '^'+val+'$' : '', true, false )
-                            .draw();
-                    } );
- 
-                column.data().unique().sort().each( function ( d, j ) {
-                    select.append( '<option value="'+d+'">'+d+'</option>' )
-                } );
-            } );
-        }
-  	});
-  	$(document).ready(function(){
-  		if($('#status').text()!= ""){
-  			var column = table.column(4);
-  			// Toggle the visibility
-	        column.visible( ! column.visible() );
-  		}
-  		$('.file-delete').click(function(){
-  			return confirm('Are you sure you want to delete? All cheques, loan details etc associated with this file will be deleted.');
-  		})
-  });
   </script>
  @stop
