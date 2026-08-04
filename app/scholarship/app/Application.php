@@ -68,6 +68,20 @@ class Application extends MongoModel
         return $this->hasMany('App\Installment','appl_id');
     }
 
+    /**
+     * The public reference number an applicant quotes, e.g. "SK261841".
+     *
+     * Derived from the year period and the application id rather than
+     * stored independently, and shared by the public form and the
+     * People-ERP bridge so the two intake paths cannot drift apart.
+     */
+    public static function makeRefno(Yearsetting $yearsetting, $applicationId): string
+    {
+        $startYear = explode('-', $yearsetting->yearperiod)[0];
+
+        return 'SK'.substr($startYear, -2).(string) $applicationId;
+    }
+
     public function getGrantStatus($status)
     {
      switch ($status) {

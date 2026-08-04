@@ -78,7 +78,10 @@ class ApplicationController extends Controller
             5 => ['path' => 'area.area',         'title' => 'Area'],
             6 => ['path' => 'district.district', 'title' => 'District'],
             7 => ['path' => 'course.coursename', 'title' => 'Course'],
-            8 => ['path' => null, 'searchable' => false, 'orderable' => false, 'title' => 'Action'],
+            // Absent on everything entered through the public form, which is
+            // what makes it read as "Web" rather than needing a backfill.
+            8 => ['path' => 'external_source',   'title' => 'Source'],
+            9 => ['path' => null, 'searchable' => false, 'orderable' => false, 'title' => 'Action'],
         ];
     }
 
@@ -149,6 +152,9 @@ class ApplicationController extends Controller
             e(optional($applicant->area)->area),
             e(optional($applicant->district)->district),
             e(optional($applicant->course)->coursename ?: $applicant->course_other),
+            $applicant->external_source === 'erp'
+                ? '<span class="label bg-olive">Portal</span>'
+                : '<span class="label bg-gray">Web</span>',
             view('admin.applications._action', compact('applicant'))->render(),
         ]);
 
@@ -182,6 +188,7 @@ class ApplicationController extends Controller
                 optional($a->area)->area,
                 optional($a->district)->district,
                 optional($a->course)->coursename ?: $a->course_other,
+                $a->external_source === 'erp' ? 'Portal' : 'Web',
             ]);
 
         $title = 'Applications'.($request->input('status') ? ' — '.ucfirst($request->input('status')) : '');

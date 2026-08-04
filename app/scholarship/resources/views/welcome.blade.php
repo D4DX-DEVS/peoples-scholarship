@@ -61,7 +61,10 @@ various parts of the country
                         <h3>HIGHER EDUCATION SCHOLARSHIP  {{ $yearsetting->yearperiod ?? null }}</h3>
                     @if ($yearsetting->entryenable && $yearsetting->applimit > $yearsetting->getApplicationsCount() )
                         <div class="label bg-olive btn-flat margin" style="font-size:16px;">Online Application Registration is open Now!!</div>
-                        <a class="btn bg-orange btn-flat margin" href="{{route('application-add')}}">Apply Now</a>
+                        {{-- Applications are now taken in the beneficiary portal, which covers
+                             every scheme rather than scholarships alone. The form at
+                             route('application-add') is still live as a fallback. --}}
+                        <a class="btn bg-orange btn-flat margin" href="{{ config('services.portal.url') }}" target="_blank" rel="noopener">Apply Now</a>
                     @else
                         <div class="label status bg-red" style="font-size:16px;">Applications to the scholarship scheme reached the limit for this month!!</div>
                     @endif
