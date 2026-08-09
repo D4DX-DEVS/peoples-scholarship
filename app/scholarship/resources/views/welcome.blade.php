@@ -50,20 +50,24 @@ various parts of the country
 </ul>
 <h3>Procedures</h3>
 <ul>
-<li><b>Register and fill required data in the appropriate fields in the e-application form<b></li>
-<li><b>After filling the data take a print out of the application<b></li>
-<li><b>Get signature and stamp from the head of the institution/department<b></li>
-<li><b>Attach mark list / certificate of qualifying course, adhar card<b></li>
-<li><b>Pass the hard copy to people’s Foundation local/area representatives<b></li>
-<li><b>The applicant will be called for an interview to assess<b></li>
+<li><b>Register and fill required data in the appropriate fields in the e-application form</b></li>
+<li><b>After filling the data take a print out of the application</b></li>
+<li><b>Get signature and stamp from the head of the institution/department</b></li>
+<li><b>Attach mark list / certificate of qualifying course, adhar card</b></li>
+<li><b>Pass the hard copy to people’s Foundation local/area representatives</b></li>
+<li><b>The applicant will be called for an interview to assess</b></li>
 </ul>
                         </div>
                         <h3>HIGHER EDUCATION SCHOLARSHIP  {{ $yearsetting->yearperiod ?? null }}</h3>
                     @if ($yearsetting->entryenable && $yearsetting->applimit > $yearsetting->getApplicationsCount() )
                         <div class="label bg-olive btn-flat margin" style="font-size:16px;">Online Application Registration is open Now!!</div>
+
                         {{-- Applications are taken in the People's Foundation beneficiary portal,
                              which covers every scheme rather than scholarships alone, and runs the
-                             whole workflow from submission through to disbursement. --}}
+                             whole workflow from submission through to disbursement. The guide below
+                             walks the applicant through that portal before they leave this page. --}}
+                        @include('partials.portal-application-guide')
+
                         <a class="btn bg-orange btn-flat margin" href="{{ config('services.portal.url') }}" target="_blank" rel="noopener">Apply Now</a>
                     @else
                         <div class="label status bg-red" style="font-size:16px;">Applications to the scholarship scheme reached the limit for this month!!</div>
