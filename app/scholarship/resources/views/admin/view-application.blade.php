@@ -52,7 +52,7 @@ Application - {{$application->refno}} Details
             <div class='row'>
                 <div class="col-xs-3"><strong>Category </strong></div>
                 <div class="col-xs-1"><strong>:</strong></div>
-                <div class="col-xs-6">{{optional($application->category)->catname}}</div>
+                <div class="col-xs-6">{{$application->category->catname}}</div>
             </div>
             <div class='row'>
                 <div class="col-xs-3"><strong>Course</strong></div>
@@ -74,29 +74,6 @@ Application - {{$application->refno}} Details
                 <div class="col-xs-1"><strong>:</strong></div>
                 <div class="col-xs-6">{{$application->unit->unit}}</div>
             </div>
-            @if($application->external_source === 'erp')
-            <div class='row'>
-                <div class="col-xs-3"><strong>Submitted via</strong></div>
-                <div class="col-xs-1"><strong>:</strong></div>
-                <div class="col-xs-6">
-                    <span class="label bg-olive">Beneficiary Portal</span>
-                    @if($application->external_number)
-                        <span class="text-muted">&nbsp;{{$application->external_number}}</span>
-                    @endif
-                </div>
-            </div>
-            @if(!empty($application->external_documents))
-            <div class='row'>
-                <div class="col-xs-3"><strong>Portal documents</strong></div>
-                <div class="col-xs-1"><strong>:</strong></div>
-                <div class="col-xs-6">
-                    @foreach($application->external_documents as $document)
-                        <div><a href="{{ $document['url'] ?? '#' }}" target="_blank" rel="noopener">{{ $document['name'] ?? 'Document' }}</a></div>
-                    @endforeach
-                </div>
-            </div>
-            @endif
-            @endif
             <div class='row'>
                 <div class="col-xs-3"><strong>Status</strong></div>
                 <div class="col-xs-1"><strong>:</strong></div>

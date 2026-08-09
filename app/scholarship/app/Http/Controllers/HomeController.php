@@ -122,7 +122,8 @@ class HomeController extends Controller
         }
         $categories=Category::pluck('catname', 'id')->toArray();
         $districts=District::orderBy('id', 'asc')->pluck('district','id')->toArray();
-        $refno = Application::makeRefno($yearsetting, session('appli_id'));
+        $splitYear = explode('-', $yearsetting->yearperiod)[0];
+        $refno="SK" . substr( $splitYear, -2) . (string) session('appli_id');
         $person=Person::find(session('person_id'));
         return view('application-final',compact('person'))->with('yearsetting',$yearsetting)->with('categories',$categories)
                                         ->with('districts',$districts)
@@ -194,7 +195,8 @@ class HomeController extends Controller
     {
         $yearsetting=Yearsetting::orderBy('id', 'desc')->first();
         $district=District::orderBy('id', 'asc')->pluck('district','id')->toArray();
-        $refno = Application::makeRefno($yearsetting, session('appli_id'));
+        $splitYear = explode('-', $yearsetting->yearperiod)[0];
+        $refno="SK" . substr( $splitYear, -2) . (string) session('appli_id');
         $person=Person::find(session('person_id'));
         $application = Application::find(session('appli_id'));
         $category=$application->category->catname;

@@ -36,17 +36,16 @@ return [
     ],
 
     /*
-    | The People-ERP beneficiary portal. "url" is where the public Apply Now
-    | button sends applicants; "secret" is the shared key the portal signs
-    | its pushes to /api/v1/bridge/* with, and must match LEGACY_BRIDGE_SECRET
-    | on the portal's API. Leaving the secret unset disables those endpoints.
+    | Where the site's Apply Now button sends applicants: the login page of the
+    | People's Foundation beneficiary portal, which is where applications are
+    | now submitted and worked. Read here rather than called from the view,
+    | because deployment runs config:cache and env() returns null outside a
+    | config file once that cache exists. No default — the value belongs to the
+    | environment, so a missing one should be obvious rather than silently
+    | replaced by a stale URL baked into the code.
     */
     'portal' => [
-        'url' => env('PORTAL_URL', 'https://peoples-foundation.netlify.app/login'),
-    ],
-
-    'bridge' => [
-        'secret' => env('BRIDGE_SHARED_SECRET'),
+        'url' => env('PORTAL_URL'),
     ],
 
 ];
