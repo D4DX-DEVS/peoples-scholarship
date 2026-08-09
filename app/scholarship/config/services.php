@@ -35,18 +35,4 @@ return [
         ],
     ],
 
-    /*
-    | The People-ERP beneficiary portal. "url" is where the public Apply Now
-    | button sends applicants; "secret" is the shared key the portal signs
-    | its pushes to /api/v1/bridge/* with, and must match LEGACY_BRIDGE_SECRET
-    | on the portal's API. Leaving the secret unset disables those endpoints.
-    */
-    'portal' => [
-        'url' => env('PORTAL_URL', 'https://peoples-foundation.netlify.app/login'),
-    ],
-
-    'bridge' => [
-        'secret' => env('BRIDGE_SHARED_SECRET'),
-    ],
-
 ];

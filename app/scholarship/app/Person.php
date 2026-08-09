@@ -39,12 +39,6 @@ class Person extends MongoModel
      /**
       * Public CDN URL of the uploaded photo, or null if none uploaded.
       *
-      * Photos for applications that arrived from the People-ERP portal are
-      * already public URLs on that system's own Spaces bucket, held in
-      * photo_external_url. They are linked rather than copied, so this
-      * returns them as-is instead of resolving a filename against the
-      * local `spaces` disk.
-      *
       * Named photoCdnUrl rather than photoUrl: PHP method names are
       * case-insensitive, and Eloquent's accessor lookup for the "photourl"
       * column would resolve to a same-named getPhotoUrlAttribute(), turning
@@ -57,10 +51,6 @@ class Person extends MongoModel
       */
      public function getPhotoCdnUrlAttribute(): ?string
      {
-         if (! empty($this->photo_external_url)) {
-             return $this->photo_external_url;
-         }
-
          if (empty($this->photourl)) {
              return null;
          }

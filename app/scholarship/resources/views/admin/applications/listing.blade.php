@@ -57,7 +57,6 @@
               <th>Area</th>
               <th width="120">District</th>
               <th width="120">Course</th>
-              <th width="80">Source</th>
               <th width="100">Action</th>
             </tr>
             </thead>
@@ -148,7 +147,7 @@ function rejectionReason(reason){
 				'colvis'
 			],
 			order: [[0, "desc"]],
-			columnDefs: [{ targets: [6], visible: false }, { targets: [9], orderable: false, searchable: false }],
+			columnDefs: [{ targets: [6], visible: false }, { targets: [8], orderable: false, searchable: false }],
 			select: true
 		});
 
