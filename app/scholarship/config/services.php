@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    /*
+    | Where the site's Apply Now button sends applicants: the login page of the
+    | People's Foundation beneficiary portal, which is where applications are
+    | now submitted and worked. Read here rather than called from the view,
+    | because deployment runs config:cache and env() returns null outside a
+    | config file once that cache exists. No default — the value belongs to the
+    | environment, so a missing one should be obvious rather than silently
+    | replaced by a stale URL baked into the code.
+    */
+    'portal' => [
+        'url' => env('PORTAL_URL'),
+    ],
+
 ];

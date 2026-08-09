@@ -64,7 +64,7 @@ various parts of the country
                         {{-- Applications are taken in the People's Foundation beneficiary portal,
                              which covers every scheme rather than scholarships alone, and runs the
                              whole workflow from submission through to disbursement. --}}
-                        <a class="btn bg-orange btn-flat margin" href="https://peoples-foundation.netlify.app/login" target="_blank" rel="noopener">Apply Now</a>
+                        <a class="btn bg-orange btn-flat margin" href="{{ config('services.portal.url') }}" target="_blank" rel="noopener">Apply Now</a>
                     @else
                         <div class="label status bg-red" style="font-size:16px;">Applications to the scholarship scheme reached the limit for this month!!</div>
                     @endif
